@@ -78,9 +78,9 @@ for layers in model.layers:
 
 inputs = model.input
 x = model.output
-x = Dense(1024, activation = 'relu', use_bias = True) (x)
-x = Dense(1024, activation = 'relu', use_bias = True) (x)
-x = Dense(1024, activation = 'relu', use_bias = True) (x)
+#x = Dense(1024, activation = 'relu', use_bias = True) (x)
+#x = Dense(1024, activation = 'relu', use_bias = True) (x)
+#x = Dense(1024, activation = 'relu', use_bias = True) (x)
 x = Dense(5, activation = 'softmax') (x)
 
 model = Model(inputs, x)
