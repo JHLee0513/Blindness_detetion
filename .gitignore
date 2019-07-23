@@ -100,5 +100,8 @@ venv.bak/
 # mkdocs documentation
 /site
 
+.hdf5
+*.hdf5
+
 # mypy
 .mypy_cache/
