@@ -16,8 +16,8 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 256
-batch = 16
+img_target = 224
+batch = 32
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 
@@ -78,9 +78,9 @@ for layers in model.layers:
 
 inputs = model.input
 x = model.output
-x = Dense(512, activation = 'relu', use_bias = True) (x)
-x = Dense(512, activation = 'relu', use_bias = True) (x)
-x = Dense(512, activation = 'relu', use_bias = True) (x)
+x = Dense(1024, activation = 'relu', use_bias = True) (x)
+x = Dense(1024, activation = 'relu', use_bias = True) (x)
+x = Dense(1024, activation = 'relu', use_bias = True) (x)
 x = Dense(5, activation = 'softmax') (x)
 
 model = Model(inputs, x)
@@ -95,7 +95,7 @@ save_model_name = 'blind_baseline_161.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_categorical_accuracy',
                                    mode = 'max', save_best_only=True, verbose=1,save_weights_only = True)
 
-cycle = 2560/batch * 20
+cycle = 2560/batch * 30
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0005, max_lr = 0.01, step_size = cycle)
 
 
@@ -131,7 +131,7 @@ kappa_metrics = Metrics()
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
-    epochs=40,
+    epochs=60,
     verbose = 1,
     callbacks = [model_checkpoint, cyclic],
     validation_data = val_generator,

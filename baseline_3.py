@@ -70,7 +70,7 @@ val_generator = val_datagen.flow_from_dataframe(
 from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
 from keras.applications.xception import Xception
 from keras.applications.resnet50 import ResNet50
-model = DenseNet169(include_top = False, weights = 'imagenet', 
+model = ResNet50(include_top = False, weights = 'imagenet', 
                     input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 
 #model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
@@ -96,42 +96,13 @@ model.compile(loss='categorical_crossentropy', optimizer = 'adam',
 
 model.summary()
 
-save_model_name = 'blind_baseline_densenet169_noaug.hdf5'
+save_model_name = 'blind_baseline_resnet50_noaug.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_categorical_accuracy',
                                    mode = 'max', save_best_only=True, verbose=1,save_weights_only = True)
 
 cycle = 2560/batch * 20
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0005, max_lr = 0.005, step_size = cycle)
-
-
-class Metrics(Callback):
-    def on_train_begin(self, logs={}):
-        self.val_kappas = []
-
-    def on_epoch_end(self, epoch, logs={}):
-        X_val, y_val = self.validation_data[:2]
-        y_val = y_val.sum(axis=1) - 1
-        
-        y_pred = self.model.predict(X_val) > 0.5
-        y_pred = y_pred.astype(int).sum(axis=1) - 1
-
-        _val_kappa = cohen_kappa_score(
-            y_val,
-            y_pred, 
-            weights='quadratic'
-        )
-
-        self.val_kappas.append(_val_kappa)
-
-        print(f"val_kappa: {_val_kappa:.4f}")
-        
-        if _val_kappa == max(self.val_kappas):
-            print("Validation Kappa has improved. Saving model.")
-            self.model.save('model.h5')
-
-        return
-kappa_metrics = Metrics()
-
+       
 
 model.fit_generator(
     train_generator,
