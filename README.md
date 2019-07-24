@@ -1,7 +1,17 @@
 # Blindness_detetion
-Kaggle challenge:
+The Readme will serve as the solution writeup.
 
-## log
+# Some TLDRs
+
+* What is Diabetic Retinopahty?
+
+* why does this matter?
+Well, detecting this condition early on will greatly help with prevention of blindness cause by this condition. Furthermore, *data* shows that it is difficult to diagnose them early on, which this application should eventually work towards to help. 
+
+* How does this writeup work towards the solution?
+This experiment involves CNN manipulation, pre-preocessing, post-processing, and overall problem tuning.
+
+# log
 
 1. Baseline.py
 
