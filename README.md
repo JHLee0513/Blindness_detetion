@@ -25,8 +25,8 @@ Kaggle challenge:
   cycle: 30 epochs per cycle, CyclicLR(mode='exp_range', base_lr = 0.0005, max_lr = 0.01, step_size = cycle)
   60 epochs total
   
-  Validation:
-  LB:
+  Validation: ~0.80
+  LB:0.704
   
 2. 
   Same model, same training, new preprocessing
@@ -51,6 +51,9 @@ intputs = 256x256x3
                      
   cycle: 30 epochs per cycle, CyclicLR(mode='exp_range', base_lr = 0.0005, max_lr = 0.01, step_size = cycle)
   60 epochs total
+  
+  CV: 0.820
+  LB: 0.716
   
   4. DenseNet 169
   no FC layers (did not know densenet does not have fc in the paper)
