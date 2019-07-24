@@ -72,7 +72,7 @@ intputs = 256x256x3
   
   5. Auto cropping
   
-  6. Different encoder
+  6. idea: edge detection preprocessing to force cnn to look more at shapes not texture
   
   7. Classificaitoion --> regression
   
