@@ -1,6 +1,8 @@
 # Blindness_detetion
 The Readme will serve as the solution writeup.
 
+THe kernel is no internet! save .h5 model instead of weights
+
 # Some TLDRs
 
 * What is Diabetic Retinopahty?
