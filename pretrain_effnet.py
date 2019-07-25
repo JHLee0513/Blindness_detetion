@@ -26,6 +26,7 @@ train_df['id_code'] += ".png"
 test_df['id_code'] += ".png"
 
 train_df = train_df.astype(str)
+test_df = test_df.astype(str)
 from sklearn.model_selection import train_test_split
 
 train, val = train_test_split(train_df, test_size = 0.25, stratify = train_df['diagnosis'])
@@ -35,12 +36,12 @@ val = val.reset_index(drop = True)
 
 data_gen_args = dict(#featurewise_center=True,
                      #featurewise_std_normalization=True,
-                     #rotation_range=90,
-                     #width_shift_range=0.1,
-                     #height_shift_range=0.1,
-                     #vertical_flip = True,
-		     #horizontal_flip = True,
-		     #zoom_range=0.2,
+                     rotation_range=360,
+                     width_shift_range=0.1,
+                     height_shift_range=0.1,
+                     vertical_flip = True,
+		     horizontal_flip = True,
+		     zoom_range=0.2,
                      rescale = 1./255)
 image_datagen = ImageDataGenerator(**data_gen_args)
 val_datagen = ImageDataGenerator(rescale = 1./255)
@@ -108,22 +109,22 @@ model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_categorical_acc
                                    mode = 'max', save_best_only=True, verbose=1,save_weights_only = True)
 
 cycle = 2560/batch * 30
-cyclic = CyclicLR(mode='triangular2', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
+cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
        
 
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
-    epochs=90,
+    epochs=120,
     verbose = 1,
     callbacks = [model_checkpoint, cyclic],
     validation_data = val_generator,
     validation_steps = 1100/batch)
 
-h = clyclic.history
-print(h['lr'])
-print("#######################")
-print(h['acc'])
+#h = clyclic.history
+#print(h['lr'])
+#print("#######################")
+#print(h['acc'])
 
 '''
 model.load_weights("./blind_baseline.hdf5")
