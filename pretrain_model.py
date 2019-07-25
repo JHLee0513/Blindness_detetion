@@ -16,22 +16,20 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 224
-batch = 32
-train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
-test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
+img_target = 380
+batch = 4
+train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
+#test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 
-train_df['id_code'] += ".png"
-
-test_df['id_code'] += ".png"
-
+#train_df = train_df[:100]
+train_df['image'] = train_df['image'].astype(str) + ".jpeg"
 train_df = train_df.astype(str)
+#train_df = train_df.astype(str)
 from sklearn.model_selection import train_test_split
 
-train, val = train_test_split(train_df, test_size = 0.25)
-train = train.reset_index(drop = True)
-val = val.reset_index(drop = True)
-
+train_d, val = train_test_split(train_df, test_size = 0.2, stratify = train_df['level'])
+train_d = train_d.reset_index(drop = True)
+val_d = val.reset_index(drop = True)
 
 data_gen_args = dict(#featurewise_center=True,
                      #featurewise_std_normalization=True,
@@ -45,10 +43,10 @@ val_datagen = ImageDataGenerator(rescale = 1./255)
 #image_datagen.fit(images, augment=True, seed=seed)
 
 train_generator = image_datagen.flow_from_dataframe(
-    train,
-    directory="/nas-homes/joonl4/blind/train_images_preprocessed/",
-    x_col = 'id_code',
-    y_col = 'diagnosis',
+    train_d,
+    directory="/nas-homes/joonl4/blind_2015/train/",
+    x_col = 'image',
+    y_col = 'level',
     target_size = (img_target,img_target),
     color_mode = 'rgb',
     class_mode = 'categorical',
@@ -56,9 +54,9 @@ train_generator = image_datagen.flow_from_dataframe(
 
 val_generator = val_datagen.flow_from_dataframe(
     val,
-    directory="/nas-homes/joonl4/blind/train_images_preprocessed/",
-    x_col = 'id_code',
-    y_col = 'diagnosis',
+    directory="/nas-homes/joonl4/blind_2015/train/",
+    x_col = 'image',
+    y_col = 'level',
     target_size = (img_target,img_target),
     color_mode = 'rgb',
     class_mode = 'categorical',
@@ -72,7 +70,7 @@ from efficientnet import EfficientNetB4
 
 #model = DenseNet169(include_top = False, weights = 'imagenet', 
 #                   input_shape = (img_target,img_target,3), pooling = 'avg')
-model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagenet', include_top = False, pooling = 'max')
+model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagenet', include_top = False, pooling = 'avg')
 
 for layers in model.layers:
     layers.trainable=True
@@ -93,7 +91,7 @@ model.compile(loss='categorical_crossentropy', optimizer = 'SGD',
 
 model.summary()
 
-save_model_name = 'blind_ben_effnet_B4.hdf5'
+save_model_name = 'raw_pretrain_effnet_B4_380.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_categorical_accuracy',
                                    mode = 'max', save_best_only=True, verbose=1,save_weights_only = True)
 
@@ -120,7 +118,7 @@ class Metrics(Callback):
 
         self.val_kappas.append(_val_kappa)
 
-        print(f"val_kappa: {_val_kappa:.4f}")
+        #print(f"val_kappa: {_val_kappa:.4f}")
         
         if _val_kappa == max(self.val_kappas):
             print("Validation Kappa has improved. Saving model.")
@@ -133,7 +131,7 @@ kappa_metrics = Metrics()
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
-    epochs=120,
+    epochs=150,
     verbose = 1,
     callbacks = [model_checkpoint, cyclic],
     validation_data = val_generator,

@@ -16,8 +16,8 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 224
-batch = 32
+img_target = 380#256
+batch = 4
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 
@@ -28,17 +28,19 @@ test_df['id_code'] += ".png"
 train_df = train_df.astype(str)
 from sklearn.model_selection import train_test_split
 
-train, val = train_test_split(train_df, test_size = 0.25)
+train, val = train_test_split(train_df, test_size = 0.25, stratify = train_df['diagnosis'])
 train = train.reset_index(drop = True)
 val = val.reset_index(drop = True)
 
 
 data_gen_args = dict(#featurewise_center=True,
                      #featurewise_std_normalization=True,
-                     rotation_range=360,
-                     width_shift_range=0.2,
-                     height_shift_range=0.2,
-                     zoom_range=0.3,
+                     #rotation_range=90,
+                     #width_shift_range=0.1,
+                     #height_shift_range=0.1,
+                     #vertical_flip = True,
+		     #horizontal_flip = True,
+		     #zoom_range=0.2,
                      rescale = 1./255)
 image_datagen = ImageDataGenerator(**data_gen_args)
 val_datagen = ImageDataGenerator(rescale = 1./255)
@@ -46,7 +48,8 @@ val_datagen = ImageDataGenerator(rescale = 1./255)
 
 train_generator = image_datagen.flow_from_dataframe(
     train,
-    directory="/nas-homes/joonl4/blind/train_images_preprocessed/",
+    #directory="/nas-homes/joonl4/blind/train_images/",
+    directory="/nas-homes/joonl4/blind/train_images_preprecessed/",
     x_col = 'id_code',
     y_col = 'diagnosis',
     target_size = (img_target,img_target),
@@ -56,6 +59,7 @@ train_generator = image_datagen.flow_from_dataframe(
 
 val_generator = val_datagen.flow_from_dataframe(
     val,
+    #directory="/nas-homes/joonl4/blind/train_images/",
     directory="/nas-homes/joonl4/blind/train_images_preprocessed/",
     x_col = 'id_code',
     y_col = 'diagnosis',
@@ -65,23 +69,29 @@ val_generator = val_datagen.flow_from_dataframe(
     batch_size = batch)
 
 
-from keras.applications.densenet import DenseNet121, DenseNet169
-from efficientnet import EfficientNetB4
-#model = DenseNet121(include_top = False, weights = 'imagenet', 
-#                    input_shape = (img_target,img_target,3), pooling = 'max')
+from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
+from keras.applications.xception import Xception
+from keras.applications.resnet50 import ResNet50
+#model = ResNet50(include_top = False, weights = 'imagenet', 
+#                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 
-#model = DenseNet169(include_top = False, weights = 'imagenet', 
-#                   input_shape = (img_target,img_target,3), pooling = 'avg')
-model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagenet', include_top = False, pooling = 'max')
+#model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
+
+from efficientnet import EfficientNetB4
+
+model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
+
 
 for layers in model.layers:
     layers.trainable=True
 
 inputs = model.input
 x = model.output
-#x = Dense(1024, activation = 'relu', use_bias = True) (x)
-#x = Dense(1024, activation = 'relu', use_bias = True) (x)
-#x = Dense(1024, activation = 'relu', use_bias = True) (x)
+#x = Dense(1000, activation = 'relu') (x)
+#x = Dropout(rate = 0.25) (x)
+#x = Dense(1000, activation = 'relu') (x)
+#x = Dropout(rate = 0.25) (x)
+#x = Dense(1000, activation = 'relu') (x)
 x = Dropout(rate = 0.4) (x)
 x = Dense(5, activation = 'softmax') (x)
 
@@ -92,52 +102,28 @@ model.compile(loss='categorical_crossentropy', optimizer = 'SGD',
 
 
 model.summary()
-
-save_model_name = 'blind_ben_effnet_B4.hdf5'
+model.load_weights("./raw_pretrain_effnet_B4_380.hdf5")
+save_model_name = 'blind_effnetB4_transfer_bens_aug_submit.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_categorical_accuracy',
                                    mode = 'max', save_best_only=True, verbose=1,save_weights_only = True)
 
 cycle = 2560/batch * 30
-cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
-
-
-class Metrics(Callback):
-    def on_train_begin(self, logs={}):
-        self.val_kappas = []
-
-    def on_epoch_end(self, epoch, logs={}):
-        X_val, y_val = self.validation_data[:2]
-        y_val = y_val.sum(axis=1) - 1
-        
-        y_pred = self.model.predict(X_val) > 0.5
-        y_pred = y_pred.astype(int).sum(axis=1) - 1
-
-        _val_kappa = cohen_kappa_score(
-            y_val,
-            y_pred, 
-            weights='quadratic'
-        )
-
-        self.val_kappas.append(_val_kappa)
-
-        print(f"val_kappa: {_val_kappa:.4f}")
-        
-        if _val_kappa == max(self.val_kappas):
-            print("Validation Kappa has improved. Saving model.")
-            self.model.save('model.h5')
-
-        return
-kappa_metrics = Metrics()
-
+cyclic = CyclicLR(mode='triangular2', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
+       
 
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
-    epochs=120,
+    epochs=90,
     verbose = 1,
     callbacks = [model_checkpoint, cyclic],
     validation_data = val_generator,
     validation_steps = 1100/batch)
+
+h = clyclic.history
+print(h['lr'])
+print("#######################")
+print(h['acc'])
 
 '''
 model.load_weights("./blind_baseline.hdf5")

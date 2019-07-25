@@ -16,8 +16,8 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 256
-batch = 16
+img_target = 380#256
+batch = 4
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 
@@ -70,48 +70,58 @@ val_generator = val_datagen.flow_from_dataframe(
 from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
 from keras.applications.xception import Xception
 from keras.applications.resnet50 import ResNet50
-model = ResNet50(include_top = False, weights = 'imagenet', 
-                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
+#model = ResNet50(include_top = False, weights = 'imagenet', 
+#                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 
 #model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
+
+from efficientnet import EfficientNetB4
+
+model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
+
 
 for layers in model.layers:
     layers.trainable=True
 
 inputs = model.input
 x = model.output
-x = Dense(1000, activation = 'relu') (x)
-x = Dropout(rate = 0.25) (x)
-x = Dense(1000, activation = 'relu') (x)
-x = Dropout(rate = 0.25) (x)
-x = Dense(1000, activation = 'relu') (x)
-x = Dropout(rate = 0.25) (x)
+#x = Dense(1000, activation = 'relu') (x)
+#x = Dropout(rate = 0.25) (x)
+#x = Dense(1000, activation = 'relu') (x)
+#x = Dropout(rate = 0.25) (x)
+#x = Dense(1000, activation = 'relu') (x)
+x = Dropout(rate = 0.4) (x)
 x = Dense(5, activation = 'softmax') (x)
 
 model = Model(inputs, x)
 
-model.compile(loss='categorical_crossentropy', optimizer = 'adam',
+model.compile(loss='categorical_crossentropy', optimizer = 'SGD',
              metrics= ['categorical_accuracy'])
 
 
 model.summary()
-
-save_model_name = 'blind_baseline_resnet50_noaug.hdf5'
+model.load_weights("./raw_pretrain_effnet_B4_380.hdf5")
+save_model_name = 'blind_effnetB4_transfer.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_categorical_accuracy',
                                    mode = 'max', save_best_only=True, verbose=1,save_weights_only = True)
 
-cycle = 2560/batch * 20
-cyclic = CyclicLR(mode='exp_range', base_lr = 0.0005, max_lr = 0.005, step_size = cycle)
+cycle = 2560/batch * 30
+cyclic = CyclicLR(mode='triangular', base_lr = 0.00005, max_lr = 0.01, step_size = cycle)
        
 
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
-    epochs=60,
+    epochs=30,
     verbose = 1,
     callbacks = [model_checkpoint, cyclic],
     validation_data = val_generator,
     validation_steps = 1100/batch)
+
+h = clyclic.history
+print(h['lr'])
+print("#######################")
+print(h['acc'])
 
 '''
 model.load_weights("./blind_baseline.hdf5")
