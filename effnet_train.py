@@ -16,8 +16,8 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 380#256
-batch = 4
+img_target = 256#256
+batch = 16
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 
@@ -29,7 +29,7 @@ train_df = train_df.astype(str)
 test_df = test_df.astype(str)
 from sklearn.model_selection import train_test_split
 
-train, val = train_test_split(train_df, test_size = 0.25, stratify = train_df['diagnosis'])
+train, val = train_test_split(train_df, test_size = 0.2, stratify = train_df['diagnosis'])
 train = train.reset_index(drop = True)
 val = val.reset_index(drop = True)
 
@@ -50,7 +50,7 @@ val_datagen = ImageDataGenerator(rescale = 1./255)
 train_generator = image_datagen.flow_from_dataframe(
     train,
     #directory="/nas-homes/joonl4/blind/train_images/",
-    directory="/nas-homes/joonl4/blind/train_images_preprecessed/",
+    directory="/nas-homes/joonl4/blind/train_images/",
     x_col = 'id_code',
     y_col = 'diagnosis',
     target_size = (img_target,img_target),
@@ -61,7 +61,7 @@ train_generator = image_datagen.flow_from_dataframe(
 val_generator = val_datagen.flow_from_dataframe(
     val,
     #directory="/nas-homes/joonl4/blind/train_images/",
-    directory="/nas-homes/joonl4/blind/train_images_preprocessed/",
+    directory="/nas-homes/joonl4/blind/train_images/",
     x_col = 'id_code',
     y_col = 'diagnosis',
     target_size = (img_target,img_target),
@@ -88,25 +88,22 @@ for layers in model.layers:
 
 inputs = model.input
 x = model.output
-#x = Dense(1000, activation = 'relu') (x)
-#x = Dropout(rate = 0.25) (x)
-#x = Dense(1000, activation = 'relu') (x)
-#x = Dropout(rate = 0.25) (x)
-#x = Dense(1000, activation = 'relu') (x)
 x = Dropout(rate = 0.4) (x)
+x = Dense(512, activation = 'elu') (x)
+x = Dropout(rate = 0.25) (x)
 x = Dense(5, activation = 'softmax') (x)
 
 model = Model(inputs, x)
 
-model.compile(loss='categorical_crossentropy', optimizer = 'SGD',
+model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9),
              metrics= ['categorical_accuracy'])
 
 
 model.summary()
-model.load_weights("./raw_pretrain_effnet_B4_380.hdf5")
-save_model_name = 'blind_effnetB4_transfer_bens_aug_submit.hdf5'
-model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_categorical_accuracy',
-                                   mode = 'max', save_best_only=True, verbose=1,save_weights_only = True)
+model.load_weights("./raw_pretrain_effnet_B4.hdf5")
+save_model_name = 'raw_pretrained_effnet_weights.hdf5'
+#model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
+#                                   mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
 cycle = 2560/batch * 30
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
@@ -115,9 +112,9 @@ cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size =
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
-    epochs=120,
+    epochs=90,
     verbose = 1,
-    callbacks = [model_checkpoint, cyclic],
+    callbacks = [cyclic],
     validation_data = val_generator,
     validation_steps = 1100/batch)
 
@@ -125,6 +122,8 @@ model.fit_generator(
 #print(h['lr'])
 #print("#######################")
 #print(h['acc'])
+
+model.save("raw_effnet_pretrained.h5")
 
 '''
 model.load_weights("./blind_baseline.hdf5")
