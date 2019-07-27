@@ -16,28 +16,36 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 380
-batch = 4
+img_target = 256#380 original?
+batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
 #test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
-
+val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 #train_df = train_df[:100]
 train_df['image'] = train_df['image'].astype(str) + ".jpeg"
 train_df = train_df.astype(str)
+
+val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
+val_df = val_df.astype(str)
+
 #train_df = train_df.astype(str)
 from sklearn.model_selection import train_test_split
 
-train_d, val = train_test_split(train_df, test_size = 0.2, stratify = train_df['level'])
-train_d = train_d.reset_index(drop = True)
-val_d = val.reset_index(drop = True)
+#train_d, val = train_test_split(train_df, test_size = 0.2, stratify = train_df['level'])
+#train_d = train_d.reset_index(drop = True)
+#val_d = val.reset_index(drop = True)
+
+train_d = train_df
 
 data_gen_args = dict(#featurewise_center=True,
                      #featurewise_std_normalization=True,
-                     rotation_range=360,
-                     width_shift_range=0.2,
-                     height_shift_range=0.2,
-                     zoom_range=0.3,
-                     rescale = 1./255)
+                     rotation_range=90,
+                     width_shift_range=0.1,
+                     height_shift_range=0.1,
+                     zoom_range=0.1,
+		     horizontal_flip = True,
+                     vertical_flip = True,
+		     rescale = 1./255)
 image_datagen = ImageDataGenerator(**data_gen_args)
 val_datagen = ImageDataGenerator(rescale = 1./255)
 #image_datagen.fit(images, augment=True, seed=seed)
@@ -53,10 +61,10 @@ train_generator = image_datagen.flow_from_dataframe(
     batch_size = batch)
 
 val_generator = val_datagen.flow_from_dataframe(
-    val,
-    directory="/nas-homes/joonl4/blind_2015/train/",
-    x_col = 'image',
-    y_col = 'level',
+    val_df,
+    directory="/nas-homes/joonl4/blind/train_images/",
+    x_col = 'id_code',
+    y_col = 'diagnosis',
     target_size = (img_target,img_target),
     color_mode = 'rgb',
     class_mode = 'categorical',
@@ -73,7 +81,7 @@ from efficientnet import EfficientNetB4
 model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagenet', include_top = False, pooling = 'avg')
 
 for layers in model.layers:
-    layers.trainable=True
+    layers.trainable=False
 
 inputs = model.input
 x = model.output
@@ -81,19 +89,21 @@ x = model.output
 #x = Dense(1024, activation = 'relu', use_bias = True) (x)
 #x = Dense(1024, activation = 'relu', use_bias = True) (x)
 x = Dropout(rate = 0.4) (x)
+x = Dense(512, activation = 'elu') (x)
+x = Dropout(rate = 0.25) (x)
 x = Dense(5, activation = 'softmax') (x)
 
 model = Model(inputs, x)
 
-model.compile(loss='categorical_crossentropy', optimizer = 'SGD',
+model.compile(loss='categorical_crossentropy', optimizer = 'adam',
              metrics= ['categorical_accuracy'])
 
 
 model.summary()
 
-save_model_name = 'raw_pretrain_effnet_B4_380.hdf5'
-model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_categorical_accuracy',
-                                   mode = 'max', save_best_only=True, verbose=1,save_weights_only = True)
+save_model_name = 'raw_pretrain_effnet_B4.hdf5'
+model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
+                                   mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
 cycle = 2560/batch * 30
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
@@ -102,6 +112,7 @@ cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size =
 class Metrics(Callback):
     def on_train_begin(self, logs={}):
         self.val_kappas = []
+
 
     def on_epoch_end(self, epoch, logs={}):
         X_val, y_val = self.validation_data[:2]
@@ -130,15 +141,54 @@ kappa_metrics = Metrics()
 
 model.fit_generator(
     train_generator,
-    steps_per_epoch=2560/batch,
-    epochs=150,
+    steps_per_epoch=35126/batch,
+    epochs=5,
     verbose = 1,
-    callbacks = [model_checkpoint, cyclic],
+    callbacks = [model_checkpoint],
     validation_data = val_generator,
-    validation_steps = 1100/batch)
+    validation_steps = 3662/batch)
 
+
+K.clear_session()
+
+
+#model.load_weights(save_model_name)
+model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagenet', include_top = False, pooling = 'avg')
+
+for layers in model.layers:
+    layers.trainable=False
+
+inputs = model.input
+x = model.output
+#x = Dense(1024, activation = 'relu', use_bias = True) (x)
+#x = Dense(1024, activation = 'relu', use_bias = True) (x)
+#x = Dense(1024, activation = 'relu', use_bias = True) (x)
+x = Dropout(rate = 0.4) (x)
+x = Dense(512, activation = 'elu') (x)
+x = Dropout(rate = 0.25) (x)
+x = Dense(5, activation = 'softmax') (x)
+
+model = Model(inputs, x)
+
+for layers in model.layers:
+    layers.trainable=True
+
+model.load_weights(save_model_name)
+
+model.compile(loss='categorical_crossentropy',optimizer= 'adam',
+             metrics= ['categorical_accuracy'])
+
+model.fit_generator(
+    train_generator,
+    steps_per_epoch=35126/batch,
+    epochs=10,
+    verbose = 1,
+    callbacks = [model_checkpoint],
+    validation_data = val_generator,
+    validation_steps = 3662/batch)
+
+model.save("blind_effnetB4.h5")
 '''
-model.load_weights("./blind_baseline.hdf5")
 
 
 
