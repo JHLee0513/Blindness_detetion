@@ -120,7 +120,7 @@ val = val.reset_index(drop = True)
 train_x = train['id_code']
 val_x = val['id_code']
 train_y = train['diagnosis']
-val_y = train['diagnosis']
+val_y = val['diagnosis']
 '''data_gen_args = dict(rotation_range=360,
                     width_shift_range=0.1,
                     height_shift_range=0.1,
