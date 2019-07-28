@@ -19,6 +19,9 @@ gc.collect()
 img_target = 256
 batch = 16
 train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
+train_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
+train_df = pd.concat([train_df, train_df2], axis = 0)
+train_df.reset_index(drop = True)
 val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['image'] = train_df['image'].astype(str) + ".jpeg"
 train_df = train_df.astype(str)
@@ -29,12 +32,12 @@ train_d = train_df
 data_gen_args = dict(#featurewise_center=True,
                      #featurewise_std_normalization=True,
                      rotation_range=360, # 90
-                     width_shift_range=0.1,
-                     height_shift_range=0.1,
-                     zoom_range=0.1,
+                     width_shift_range=0.2,
+                     height_shift_range=0.2,
+                     zoom_range=0.2,
 		             horizontal_flip = True,
                      vertical_flip = True,
-		     rescale = 1./255)
+		     q       rescale = 1./255)
 image_datagen = ImageDataGenerator(**data_gen_args)
 val_datagen = ImageDataGenerator(rescale = 1./255)
 #image_datagen.fit(images, augment=True, seed=seed)
@@ -79,12 +82,12 @@ x = model.output
 #x = Dense(1024, activation = 'relu', use_bias = True) (x)
 x = Dropout(rate = 0.4) (x)
 x = Dense(512, activation = 'elu') (x)
-x = Dropout(rate = 0.25) (x)
+x = Dropout(rate = 0.4) (x)
 x = Dense(5, activation = 'softmax') (x)
 
 model = Model(inputs, x)
 
-model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9),
+model.compile(loss='categorical_crossentropy', optimizer ='adam',
              metrics= ['categorical_accuracy'])
 
 
@@ -97,12 +100,12 @@ model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
 cycle = 35126/batch * 20
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
 
-model.load_weights("raw_pretrain_effnet_B4.hdf5")
+#model.load_weights("raw_pretrain_effnet_B4.hdf5")
 
 model.fit_generator(
     train_generator,
     steps_per_epoch=35126/batch,
-    epochs=40,
+    epochs=16,
     verbose = 1,
     callbacks = [model_checkpoint],
     validation_data = val_generator,
