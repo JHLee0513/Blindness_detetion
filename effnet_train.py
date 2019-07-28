@@ -34,9 +34,9 @@ batch = 16
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 
-train_df['id_code'] += ".png"
+#train_df['id_code'] += ".png"
 
-test_df['id_code'] += ".png"
+#test_df['id_code'] += ".png"
 
 train_df = train_df.astype(str)
 test_df = test_df.astype(str)
