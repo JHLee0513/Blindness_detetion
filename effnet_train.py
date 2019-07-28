@@ -141,8 +141,7 @@ class QWKEvaluation(Callback):
                 print('save checkpoint: ', score)
                 self.model.save('../working/Resnet50_bestqwk.h5')
 
-qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                    batch_size=16, interval=1)
+
 
 #i = 1
 #kf = StratifiedKFold(n_splits=3)
@@ -251,6 +250,8 @@ val_generator = val_datagen.flow_from_dataframe(
 train_generator = My_Generator(train_x, train_y, 16, is_train=True)
 train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
 val_generator = My_Generator(val_x, val_y, 16, is_train=False)
+qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                    batch_size=16, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 #model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
