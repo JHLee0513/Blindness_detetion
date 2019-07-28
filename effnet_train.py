@@ -229,21 +229,22 @@ x = Dense(512, activation = 'elu') (x)
 x = Dropout(rate = 0.25) (x)
 x = Dense(5, activation = 'softmax') (x)
 model = Model(inputs, x)
-model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9),
+model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
             metrics= ['categorical_accuracy'])
 model.summary()
-model.load_weights("./raw_pretrain_effnet_B4.hdf5")
+#model.load_weights("./raw_pretrain_effnet_B4.hdf5")
 save_model_name = 'raw_pretrained_effnet_weights_v2.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                 mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 cycle = 2560/batch * 30
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)  
-
+model.load_weights(save_model_name)
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
-    epochs=90,
+    epochs=180,
     verbose = 1,
+    initial_epoch = 14,
     callbacks = [cyclic, model_checkpoint],
     validation_data = val_generator,
     validation_steps = 1100/batch)
