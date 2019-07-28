@@ -93,7 +93,7 @@ model.compile(loss='categorical_crossentropy', optimizer ='adam',
 
 #model.summary()
 
-save_model_name = 'raw_pretrain_effnet_B4.hdf5'
+save_model_name = 'raw_pretrain_effnet_B4_fulldata.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
@@ -104,8 +104,8 @@ cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size =
 
 model.fit_generator(
     train_generator,
-    steps_per_epoch=35126/batch,
-    epochs=16,
+    steps_per_epoch=88702/batch,
+    epochs=10,
     verbose = 1,
     callbacks = [model_checkpoint],
     validation_data = val_generator,
