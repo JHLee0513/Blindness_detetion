@@ -139,9 +139,7 @@ class QWKEvaluation(Callback):
             self.history.append(score)
             if score >= max(self.history):
                 print('save checkpoint: ', score)
-                self.model.save('../working/Resnet50_bestqwk.h5')
-
-
+                self.model.save('./raw_effnet_pretrained_v2.h5')
 
 #i = 1
 #kf = StratifiedKFold(n_splits=3)
@@ -295,6 +293,6 @@ model.fit_generator(
     callbacks = [cyclic, model_checkpoint, qwk],
     validation_data = val_generator,
     validation_steps = 1100/batch)
-model.load_weights(save_model_name)
+#model.load_weights(save_model_name)
 
-model.save('raw_effnet_pretrained_v2.h5')
+#model.save('raw_effnet_pretrained_v2.h5')
