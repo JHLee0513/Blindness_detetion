@@ -10,7 +10,7 @@ from keras.utils.vis_utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import *
 from keras import backend as K
-from keras.utils import Sequence
+from keras.utils import Sequence, to_categorical
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from sklearn.model_selection import train_test_split
