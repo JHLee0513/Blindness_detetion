@@ -107,7 +107,7 @@ class My_Generator(Sequence):
 i = 1
 kf = KFold(n_splits=5)
 kf.get_n_splits(train_df)
-for train_index, test_index in tqdm(kf.split(train_df)):
+for train_index, test_index in kf.split(train_df):
     #print("TRAIN:", train_index, "TEST:", test_index)
     train, val = train_df.iloc[train_index], train_df.iloc[test_index]
     train = train.reset_index(drop = True)
@@ -253,7 +253,6 @@ for train_index, test_index in tqdm(kf.split(train_df)):
         train_generator,
         steps_per_epoch=2560/batch,
         epochs=90,
-        initial_epoch = 68,
         verbose = 1,
         callbacks = [cyclic, model_checkpoint],
         validation_data = val_generator,
