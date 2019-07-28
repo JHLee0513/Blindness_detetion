@@ -107,7 +107,7 @@ kf = KFold(n_splits=5)
 kf.get_n_splits(train_df)
 for train_index, test_index in tqdm(kf.split(train_df)):
     #print("TRAIN:", train_index, "TEST:", test_index)
-    train, val = train_df[train_index], train_df[test_index]
+    train, val = train_df.iloc[train_index], train_df.iloc[test_index]
     train = train.reset_index(drop = True)
     val = val.reset_index(drop = True)
     train_x = train['id_code']
