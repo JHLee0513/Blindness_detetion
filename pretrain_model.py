@@ -37,7 +37,7 @@ data_gen_args = dict(#featurewise_center=True,
                      zoom_range=0.2,
 		             horizontal_flip = True,
                      vertical_flip = True,
-		     q       rescale = 1./255)
+		             rescale = 1./255)
 image_datagen = ImageDataGenerator(**data_gen_args)
 val_datagen = ImageDataGenerator(rescale = 1./255)
 #image_datagen.fit(images, augment=True, seed=seed)
