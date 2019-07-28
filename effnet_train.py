@@ -107,7 +107,7 @@ class My_Generator(Sequence):
 
 #train, val = train_test_split(train_df, test_size = 0.2, stratify = train_df['diagnosis'])
 i = 1
-kf = StratifiedKFold(n_splits=5)
+kf = StratifiedKFold(n_splits=3)
 df_x = train_df['id_code']
 df_y = train_df['diagnosis']
 kf.get_n_splits(df_x, df_y)
