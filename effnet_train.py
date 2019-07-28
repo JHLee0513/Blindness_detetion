@@ -84,7 +84,7 @@ class My_Generator(Sequence):
     def train_generate(self, batch_x, batch_y):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
-            img = cv2.imread('../input/aptos2019-blindness-detection/train_images/'+sample+'.png')
+            img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample+'.png')
             img = cv2.resize(img, (SIZE, SIZE))
             if(self.is_augment):
                 img = seq.augment_image(img)
@@ -98,7 +98,7 @@ class My_Generator(Sequence):
     def valid_generate(self, batch_x, batch_y):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
-            img = cv2.imread('../input/aptos2019-blindness-detection/train_images/'+sample+'.png')
+            img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample+'.png')
             img = cv2.resize(img, (SIZE, SIZE))
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
