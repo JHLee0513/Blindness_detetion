@@ -14,7 +14,7 @@ from keras.utils import Sequence
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
 from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
@@ -107,9 +107,12 @@ class My_Generator(Sequence):
 
 #train, val = train_test_split(train_df, test_size = 0.2, stratify = train_df['diagnosis'])
 i = 1
-kf = KFold(n_splits=5)
-kf.get_n_splits(train_df)
-for train_index, test_index in kf.split(train_df):
+kf = StratifiedKFold(n_splits=5)
+df_x = train_df['id_code']
+df_y = train_df['diagnosis']
+kf.get_n_splits(df_x, df_y)
+
+for train_index, test_index in kf.split(df_x, df_y):
     #print("TRAIN:", train_index, "TEST:", test_index)
     train, val = train_df.iloc[train_index], train_df.iloc[test_index]
     train = train.reset_index(drop = True)
