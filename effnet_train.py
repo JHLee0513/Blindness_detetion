@@ -109,7 +109,7 @@ cycle = 2560/batch * 30
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
        
 model.load_weights(save_model_name)
-
+'''
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
@@ -119,7 +119,7 @@ model.fit_generator(
     callbacks = [cyclic, model_checkpoint],
     validation_data = val_generator,
     validation_steps = 1100/batch)
-
+'''
 #h = clyclic.history
 #print(h['lr'])
 #print("#######################")
