@@ -105,7 +105,10 @@ class My_Generator(Sequence):
         batch_y = np.array(batch_y, np.float32)
         return batch_images, batch_y
 
-train, val = train_test_split(train_df, test_size = 0.2, stratify = train_df['diagnosis'])
+x = train_df['id_code']
+y = to_categorical(train_df['diagnosis'], num_classes=5)
+
+train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 #i = 1
 #kf = StratifiedKFold(n_splits=3)
 #df_x = train_df['id_code']
@@ -115,12 +118,12 @@ train, val = train_test_split(train_df, test_size = 0.2, stratify = train_df['di
 #for train_index, test_index in kf.split(df_x, df_y):
 #print("TRAIN:", train_index, "TEST:", test_index)
 #train, val = train_df.iloc[train_index], train_df.iloc[test_index]
-train = train.reset_index(drop = True)
-val = val.reset_index(drop = True)
-train_x = train['id_code']
-val_x = val['id_code']
-train_y = train['diagnosis']
-val_y = val['diagnosis']
+# train = train.reset_index(drop = True)
+# val = val.reset_index(drop = True)
+# train_x = train['id_code']
+# val_x = val['id_code']
+# train_y = train['diagnosis']
+# val_y = val['diagnosis']
 '''data_gen_args = dict(rotation_range=360,
                     width_shift_range=0.1,
                     height_shift_range=0.1,
