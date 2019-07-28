@@ -100,7 +100,7 @@ model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, moment
 
 
 model.summary()
-#model.load_weights("./raw_pretrain_effnet_B4.hdf5")
+model.load_weights("./raw_pretrain_effnet_B4.hdf5")
 save_model_name = 'raw_pretrained_effnet_weights.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
@@ -108,7 +108,7 @@ model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
 cycle = 2560/batch * 30
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
        
-model.load_weights(save_model_name)
+#model.load_weights(save_model_name)
 '''
 model.fit_generator(
     train_generator,

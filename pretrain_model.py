@@ -16,34 +16,23 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 256#380 original?
-batch = 8
+img_target = 256
+batch = 16
 train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
-#test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
-#train_df = train_df[:100]
 train_df['image'] = train_df['image'].astype(str) + ".jpeg"
 train_df = train_df.astype(str)
-
 val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
 val_df = val_df.astype(str)
-
-#train_df = train_df.astype(str)
-from sklearn.model_selection import train_test_split
-
-#train_d, val = train_test_split(train_df, test_size = 0.2, stratify = train_df['level'])
-#train_d = train_d.reset_index(drop = True)
-#val_d = val.reset_index(drop = True)
-
 train_d = train_df
 
 data_gen_args = dict(#featurewise_center=True,
                      #featurewise_std_normalization=True,
-                     rotation_range=90,
+                     rotation_range=360, # 90
                      width_shift_range=0.1,
                      height_shift_range=0.1,
                      zoom_range=0.1,
-		     horizontal_flip = True,
+		             horizontal_flip = True,
                      vertical_flip = True,
 		     rescale = 1./255)
 image_datagen = ImageDataGenerator(**data_gen_args)
@@ -71,17 +60,17 @@ val_generator = val_datagen.flow_from_dataframe(
     batch_size = batch)
 
 
-from keras.applications.densenet import DenseNet121, DenseNet169
+#from keras.applications.densenet import DenseNet121, DenseNet169
 from efficientnet import EfficientNetB4
 #model = DenseNet121(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'max')
 
 #model = DenseNet169(include_top = False, weights = 'imagenet', 
 #                   input_shape = (img_target,img_target,3), pooling = 'avg')
-model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagenet', include_top = False, pooling = 'avg')
+model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights=None, include_top = False, pooling = 'avg')
 
 for layers in model.layers:
-    layers.trainable=False
+    layers.trainable=True
 
 inputs = model.input
 x = model.output
@@ -95,60 +84,31 @@ x = Dense(5, activation = 'softmax') (x)
 
 model = Model(inputs, x)
 
-model.compile(loss='categorical_crossentropy', optimizer = 'adam',
+model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9),
              metrics= ['categorical_accuracy'])
 
 
-model.summary()
+#model.summary()
 
 save_model_name = 'raw_pretrain_effnet_B4.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
-cycle = 2560/batch * 30
+cycle = 35126/batch * 20
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
 
-
-class Metrics(Callback):
-    def on_train_begin(self, logs={}):
-        self.val_kappas = []
-
-
-    def on_epoch_end(self, epoch, logs={}):
-        X_val, y_val = self.validation_data[:2]
-        y_val = y_val.sum(axis=1) - 1
-        
-        y_pred = self.model.predict(X_val) > 0.5
-        y_pred = y_pred.astype(int).sum(axis=1) - 1
-
-        _val_kappa = cohen_kappa_score(
-            y_val,
-            y_pred, 
-            weights='quadratic'
-        )
-
-        self.val_kappas.append(_val_kappa)
-
-        #print(f"val_kappa: {_val_kappa:.4f}")
-        
-        if _val_kappa == max(self.val_kappas):
-            print("Validation Kappa has improved. Saving model.")
-            self.model.save('model.h5')
-
-        return
-kappa_metrics = Metrics()
-
+model.load_weights("raw_pretrain_effnet_B4")
 
 model.fit_generator(
     train_generator,
     steps_per_epoch=35126/batch,
-    epochs=5,
+    epochs=40,
     verbose = 1,
     callbacks = [model_checkpoint],
     validation_data = val_generator,
     validation_steps = 3662/batch)
 
-
+''''
 K.clear_session()
 
 
@@ -185,9 +145,9 @@ model.fit_generator(
     verbose = 1,
     callbacks = [model_checkpoint],
     validation_data = val_generator,
-    validation_steps = 3662/batch)
+    validation_steps = 3662/batch)'''
 
-model.save("blind_effnetB4.h5")
+# model.save("blind_effnetB4.h5")
 '''
 
 
