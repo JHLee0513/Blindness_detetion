@@ -29,6 +29,7 @@ gc.enable()
 gc.collect()
 
 img_target = 256#256
+SIZE = 256
 batch = 16
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
