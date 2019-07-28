@@ -109,6 +109,41 @@ x = train_df['id_code']
 y = to_categorical(train_df['diagnosis'], num_classes=5)
 
 train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
+from keras.callbacks import Callback
+class QWKEvaluation(Callback):
+    def __init__(self, validation_data=(), batch_size=64, interval=1):
+        super(Callback, self).__init__()
+
+        self.interval = interval
+        self.batch_size = batch_size
+        self.valid_generator, self.y_val = validation_data
+        self.history = []
+
+    def on_epoch_end(self, epoch, logs={}):
+        if epoch % self.interval == 0:
+            y_pred = self.model.predict_generator(generator=self.valid_generator,
+                                                  steps=np.ceil(float(len(self.y_val)) / float(self.batch_size)),
+                                                  workers=1, use_multiprocessing=True,
+                                                  verbose=1)
+            def flatten(y):
+                return np.argmax(y, axis=1).reshape(-1)
+                # return np.sum(y.astype(int), axis=1) - 1
+            
+            score = cohen_kappa_score(flatten(self.y_val),
+                                      flatten(y_pred),
+                                      labels=[0,1,2,3,4],
+                                      weights='quadratic')
+#             print(flatten(self.y_val)[:5])
+#             print(flatten(y_pred)[:5])
+            print("\n epoch: %d - QWK_score: %.6f \n" % (epoch+1, score))
+            self.history.append(score)
+            if score >= max(self.history):
+                print('save checkpoint: ', score)
+                self.model.save('../working/Resnet50_bestqwk.h5')
+
+qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                    batch_size=16, interval=1)
+
 #i = 1
 #kf = StratifiedKFold(n_splits=3)
 #df_x = train_df['id_code']
@@ -139,7 +174,7 @@ seq = iaa.Sequential(
     [
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
-        iaa.Flipud(0.2), # vertically flip 20% of all images
+        iaa.Flipud(0.5), # vertically flip 20% of all images
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -214,7 +249,7 @@ val_generator = val_datagen.flow_from_dataframe(
     class_mode = 'categorical',
     batch_size = batch)'''
 train_generator = My_Generator(train_x, train_y, 16, is_train=True)
-#train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=False, augment=True)
+train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
 val_generator = My_Generator(val_x, val_y, 16, is_train=False)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
@@ -229,24 +264,36 @@ x = Dense(512, activation = 'elu') (x)
 x = Dropout(rate = 0.25) (x)
 x = Dense(5, activation = 'softmax') (x)
 model = Model(inputs, x)
-model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
+model.compile(loss='categorical_crossentropy', optimizer = Adam(lr = 1e-3),
             metrics= ['categorical_accuracy'])
 model.summary()
-#model.load_weights("./raw_pretrain_effnet_B4.hdf5")
+model.load_weights("./raw_pretrain_effnet_B4.hdf5")
 save_model_name = 'raw_pretrained_effnet_weights_v2.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                 mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-cycle = 2560/batch * 30
+cycle = 2560/batch * 20
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)  
 model.load_weights(save_model_name)
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
-    epochs=180,
+    epochs=5,
     verbose = 1,
-    initial_epoch = 14,
-    callbacks = [cyclic, model_checkpoint],
+    #initial_epoch = 14,
+    callbacks = [model_checkpoint],
     validation_data = val_generator,
     validation_steps = 1100/batch)
 model.load_weights(save_model_name)
+model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
+            metrics= ['categorical_accuracy'])
+model.fit_generator(
+    train_generator,
+    steps_per_epoch=2560/batch,
+    epochs=60,
+    verbose = 1,
+    callbacks = [cyclic, model_checkpoint, qwk],
+    validation_data = val_generator,
+    validation_steps = 1100/batch)
+model.load_weights(save_model_name)
+
 model.save('raw_effnet_pretrained_v2.h5')
