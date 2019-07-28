@@ -97,7 +97,7 @@ model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
 cycle = 35126/batch * 20
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
 
-model.load_weights("raw_pretrain_effnet_B4")
+model.load_weights("raw_pretrain_effnet_B4.hdf5")
 
 model.fit_generator(
     train_generator,
