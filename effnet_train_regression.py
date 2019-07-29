@@ -209,7 +209,7 @@ x = model.output
 x = Dropout(rate = 0.4) (x)
 x = Dense(512, activation = 'elu') (x)
 x = Dropout(rate = 0.25) (x)
-x = Dense(1, activation = None) (x)
+x = Dense(1, activation = None, name = 'regressor') (x)
 model = Model(inputs, x)
 model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
             metrics= ['mae'])
