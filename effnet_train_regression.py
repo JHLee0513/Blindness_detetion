@@ -240,7 +240,7 @@ model.compile(loss='mse', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = 
 model.fit_generator(
     train_generator,
     steps_per_epoch=2560/batch,
-    epochs=40,
+    epochs=120,
     verbose = 1,
     callbacks = [cyclic, model_checkpoint, qwk],
     validation_data = val_generator,
