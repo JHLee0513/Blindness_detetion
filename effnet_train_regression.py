@@ -15,7 +15,7 @@ from keras.callbacks import Callback
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
 from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
@@ -103,8 +103,7 @@ class My_Generator(Sequence):
 x = train_df['id_code']
 #y = to_categorical(train_df['diagnosis'], num_classes=5)
 y = train_df['diagnosis']
-train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
-
+qwk_ckpt_name = './raw_effnet_pretrained_v2_regression.h5'
 class QWKEvaluation(Callback):
     def __init__(self, validation_data=(), batch_size=64, interval=1):
         super(Callback, self).__init__()
@@ -137,7 +136,7 @@ class QWKEvaluation(Callback):
             self.history.append(score)
             if score >= max(self.history):
                 print('save checkpoint: ', score)
-                self.model.save('./raw_effnet_pretrained_v2_regression.h5')
+                self.model.save(qwk_ckpt_name)
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 seq = iaa.Sequential(
@@ -199,50 +198,60 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-train_generator = My_Generator(train_x, train_y, 16, is_train=True)
-train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
-val_generator = My_Generator(val_x, val_y, 16, is_train=False)
-qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                    batch_size=16, interval=1)
-model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
-for layers in model.layers:
-    layers.trainable=True
-inputs = model.input
-x = model.output
-x = Dropout(rate = 0.4) (x)
-x = Dense(512, activation = 'elu') (x)
-x = Dropout(rate = 0.25) (x)
-x = Dense(1, activation = None, name = 'regressor') (x)
-model = Model(inputs, x)
-model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
-            metrics= ['mae'])
-model.summary()
-#get best weights from classification problem
-model.load_weights("./raw_pretrained_effnet_weights_v2.hdf5", by_name = True)
-save_model_name = 'raw_pretrained_effnet_weights_v2_regression.hdf5'
-model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
-                                mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-cycle = 2560/batch * 20
-cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)  
-#model.load_weights(save_model_name)
-model.fit_generator(
-    train_generator,
-    steps_per_epoch=2560/batch,
-    epochs=3, #shorter as the model is already quite tuned
-    verbose = 1,
-    callbacks = [model_checkpoint, qwk],
-    validation_data = val_generator,
-    validation_steps = 1100/batch,
-    workers=1, use_multiprocessing=False)
-model.load_weights(save_model_name)
-model.compile(loss='mse', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
-            metrics= ['mae'])
-model.fit_generator(
-    train_generator,
-    steps_per_epoch=2560/batch,
-    epochs=120,
-    verbose = 1,
-    callbacks = [cyclic, model_checkpoint, qwk],
-    validation_data = val_generator,
-    validation_steps = 1100/batch,
-    workers=1, use_multiprocessing=False)
+kf = KFold(n_splits = 10)
+kf.get_n_splits(x)
+fold = 1
+for train_idx, test_idx in kf.split(x):
+    train_x, val_x = x[train_idx], x[test_idx]
+    train_y, val_y = y[train_idx], y[test_idx]
+#train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
+
+    train_generator = My_Generator(train_x, train_y, 16, is_train=True)
+    train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
+    val_generator = My_Generator(val_x, val_y, 16, is_train=False)
+    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                        batch_size=16, interval=1)
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
+    for layers in model.layers:
+        layers.trainable=True
+    inputs = model.input
+    x = model.output
+    x = Dropout(rate = 0.4) (x)
+    x = Dense(512, activation = 'elu') (x)
+    x = Dropout(rate = 0.25) (x)
+    x = Dense(1, activation = None, name = 'regressor') (x)
+    model = Model(inputs, x)
+    model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
+                metrics= ['mae'])
+    model.summary()
+    #get best weights from classification problem
+    model.load_weights("./raw_pretrained_effnet_weights_v2.hdf5", by_name = True)
+    save_model_name = 'raw_pretrained_effnet_weights_v2_regression_fold'+str(fold)+'.hdf5'
+    model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
+                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
+    cycle = 2560/batch * 20
+    cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)  
+    #model.load_weights(save_model_name)
+    qwk_ckpt_name = './raw_effnet_pretrained_v2_regression_fold'+str(fold)+'.h5'
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=2560/batch,
+        epochs=3, #shorter as the model is already quite tuned
+        verbose = 1,
+        callbacks = [model_checkpoint, qwk],
+        validation_data = val_generator,
+        validation_steps = 1100/batch,
+        workers=1, use_multiprocessing=False)
+    model.load_weights(save_model_name)
+    model.compile(loss='mse', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
+                metrics= ['mae'])
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=2560/batch,
+        epochs=120,
+        verbose = 1,
+        callbacks = [cyclic, model_checkpoint, qwk],
+        validation_data = val_generator,
+        validation_steps = 1100/batch,
+        workers=1, use_multiprocessing=False)
+    fold += 1        
