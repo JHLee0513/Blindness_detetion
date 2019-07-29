@@ -11,6 +11,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import *
 from keras import backend as K
 from keras.utils import Sequence, to_categorical
+from keras.callbacks import Callback
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from sklearn.model_selection import train_test_split
@@ -109,7 +110,7 @@ x = train_df['id_code']
 y = to_categorical(train_df['diagnosis'], num_classes=5)
 
 train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
-from keras.callbacks import Callback
+
 class QWKEvaluation(Callback):
     def __init__(self, validation_data=(), batch_size=64, interval=1):
         super(Callback, self).__init__()
@@ -281,7 +282,8 @@ model.fit_generator(
     #initial_epoch = 14,
     callbacks = [model_checkpoint],
     validation_data = val_generator,
-    validation_steps = 1100/batch)
+    validation_steps = 1100/batch,
+    workers=1, use_multiprocessing=False)
 model.load_weights(save_model_name)
 model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
             metrics= ['categorical_accuracy'])
@@ -292,7 +294,8 @@ model.fit_generator(
     verbose = 1,
     callbacks = [cyclic, model_checkpoint, qwk],
     validation_data = val_generator,
-    validation_steps = 1100/batch)
+    validation_steps = 1100/batch,
+    workers=1, use_multiprocessing=False)
 #model.load_weights(save_model_name)
 
 #model.save('raw_effnet_pretrained_v2.h5')
