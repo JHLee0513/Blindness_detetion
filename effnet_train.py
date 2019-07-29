@@ -109,7 +109,8 @@ class My_Generator(Sequence):
 x = train_df['id_code']
 y = to_categorical(train_df['diagnosis'], num_classes=5)
 
-train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
+#train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
+qwk_ckpt_name = './raw_effnet_pretrained_v2.h5'
 
 class QWKEvaluation(Callback):
     def __init__(self, validation_data=(), batch_size=64, interval=1):
@@ -140,7 +141,7 @@ class QWKEvaluation(Callback):
             self.history.append(score)
             if score >= max(self.history):
                 print('save checkpoint: ', score)
-                self.model.save('./raw_effnet_pretrained_v2.h5')
+                self.model.save(qwk_ckpt_name)
 
 #i = 1
 #kf = StratifiedKFold(n_splits=3)
@@ -246,56 +247,65 @@ val_generator = val_datagen.flow_from_dataframe(
     color_mode = 'rgb',
     class_mode = 'categorical',
     batch_size = batch)'''
-train_generator = My_Generator(train_x, train_y, 16, is_train=True)
-train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
-val_generator = My_Generator(val_x, val_y, 16, is_train=False)
-qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                    batch_size=16, interval=1)
+
+kf = KFold(n_splits = 10)
+kf.get_n_splits(x)
+fold = 1
+for train_idx, test_idx in kf.split(x):
+    qwk_ckpt_name = './raw_effnet_pretrained_v2_fold'+str(fold)+'.h5'
+    train_x, val_x = x[train_idx], x[test_idx]
+    train_y, val_y = y[train_idx], y[test_idx]
+    train_generator = My_Generator(train_x, train_y, 16, is_train=True)
+    train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
+    val_generator = My_Generator(val_x, val_y, 16, is_train=False)
+    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                        batch_size=16, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 #model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
-model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
-for layers in model.layers:
-    layers.trainable=True
-inputs = model.input
-x = model.output
-x = Dropout(rate = 0.4) (x)
-x = Dense(512, activation = 'elu') (x)
-x = Dropout(rate = 0.25) (x)
-x = Dense(5, activation = 'softmax') (x)
-model = Model(inputs, x)
-model.compile(loss='categorical_crossentropy', optimizer = Adam(lr = 1e-3),
-            metrics= ['categorical_accuracy'])
-model.summary()
-model.load_weights("./raw_pretrain_effnet_B4.hdf5")
-save_model_name = 'raw_pretrained_effnet_weights_v2.hdf5'
-model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
-                                mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-cycle = 2560/batch * 20
-cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.003, step_size = cycle)  
-model.load_weights(save_model_name)
-model.fit_generator(
-    train_generator,
-    steps_per_epoch=2560/batch,
-    epochs=5,
-    verbose = 1,
-    #initial_epoch = 14,
-    callbacks = [model_checkpoint],
-    validation_data = val_generator,
-    validation_steps = 1100/batch,
-    workers=1, use_multiprocessing=False)
-model.load_weights(save_model_name)
-model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
-            metrics= ['categorical_accuracy'])
-model.fit_generator(
-    train_generator,
-    steps_per_epoch=2560/batch,
-    epochs=60,
-    verbose = 1,
-    callbacks = [cyclic, model_checkpoint, qwk],
-    validation_data = val_generator,
-    validation_steps = 1100/batch,
-    workers=1, use_multiprocessing=False)
-#model.load_weights(save_model_name)
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
+    for layers in model.layers:
+        layers.trainable=True
+    inputs = model.input
+    x = model.output
+    x = Dropout(rate = 0.4) (x)
+    x = Dense(512, activation = 'elu') (x)
+    x = Dropout(rate = 0.25) (x)
+    x = Dense(5, activation = 'softmax') (x)
+    model = Model(inputs, x)
+    model.compile(loss='categorical_crossentropy', optimizer = Adam(lr = 1e-3),
+                metrics= ['categorical_accuracy'])
+    model.summary()
+    model.load_weights("./raw_pretrain_effnet_B4.hdf5")
+    save_model_name = 'raw_pretrained_effnet_weights_v2_fold'+str(fold)+'.hdf5'
+    model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
+                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
+    cycle = 2560/batch * 20
+    cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.003, step_size = cycle)  
+    model.load_weights(save_model_name)
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=2560/batch,
+        epochs=5,
+        verbose = 1,
+        #initial_epoch = 14,
+        callbacks = [model_checkpoint],
+        validation_data = val_generator,
+        validation_steps = 1100/batch,
+        workers=1, use_multiprocessing=False)
+    model.load_weights(save_model_name)
+    model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
+                metrics= ['categorical_accuracy'])
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=2560/batch,
+        epochs=40,
+        verbose = 1,
+        callbacks = [cyclic, model_checkpoint, qwk],
+        validation_data = val_generator,
+        validation_steps = 1100/batch,
+        workers=1, use_multiprocessing=False)
+    fold += 1
+    #model.load_weights(save_model_name)
 
-#model.save('raw_effnet_pretrained_v2.h5')
+    #model.save('raw_effnet_pretrained_v2.h5')
