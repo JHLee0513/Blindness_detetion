@@ -121,8 +121,8 @@ class QWKEvaluation(Callback):
                                                   workers=1, use_multiprocessing=True,
                                                   verbose=1)
             def flatten(y):
-                return np.argmax(y, axis=1).reshape(-1)
-                # return np.sum(y.astype(int), axis=1) - 1
+                #return np.argmax(y, axis=1).reshape(-1)
+                return np.sum(y.astype(int), axis=1) - 1
             
             score = cohen_kappa_score(flatten(self.y_val),
                                       flatten(y_pred),
