@@ -126,7 +126,7 @@ class QWKEvaluation(Callback):
             
             score = cohen_kappa_score(flatten(self.y_val),
                                       flatten(y_pred),
-                                      labels=[0,1,2,3,4],
+                                      #labels=[0,1,2,3,4],
                                       weights='quadratic')
 #             print(flatten(self.y_val)[:5])
 #             print(flatten(y_pred)[:5])
