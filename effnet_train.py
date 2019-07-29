@@ -282,7 +282,7 @@ for train_idx, test_idx in kf.split(x):
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     cycle = 2560/batch * 20
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.003, step_size = cycle)  
-    model.load_weights(save_model_name)
+    #model.load_weights(save_model_name)
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
