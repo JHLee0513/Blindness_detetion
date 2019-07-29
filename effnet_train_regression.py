@@ -225,7 +225,7 @@ cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.003, step_size 
 #model.load_weights(save_model_name)
 model.fit_generator(
     train_generator,
-    steps_per_epoch=10#2560/batch,
+    steps_per_epoch=10,#2560/batch,
     epochs=3, #shorter as the model is already quite tuned
     verbose = 1,
     callbacks = [model_checkpoint, qwk],
