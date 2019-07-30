@@ -33,7 +33,7 @@ gc.collect()
 
 img_target = 256#256
 SIZE = 256
-batch = 16
+batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 train_df = train_df.astype(str)
@@ -131,8 +131,9 @@ class QWKEvaluation(Callback):
                                                   workers=1, use_multiprocessing=True,
                                                   verbose=1)
             def flatten(y):
-                return np.argmax(y, axis=1).reshape(-1)
+                #return np.argmax(y, axis=1).reshape(-1)
                 # return np.sum(y.astype(int), axis=1) - 1
+		return np.rint(np.sum(y,axis=1)).astype(int)
             
             score = cohen_kappa_score(flatten(self.y_val),
                                       flatten(y_pred),
@@ -240,6 +241,8 @@ for cv_index in range(1,6):
         layers.trainable=True
     inputs = model.input
     x = model.output
+    x = Dropout(rate = 0.5) (x)
+    x = Dense(512, activation = 'elu') (x)
     x = Dropout(rate = 0.25) (x)
     x = Dense(5, activation = 'sigmoid') (x)
     model = Model(inputs, x)
