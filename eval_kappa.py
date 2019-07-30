@@ -15,13 +15,13 @@ from keras.callbacks import Callback
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.model_selection import KFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
 from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
 from keras.applications.xception import Xception
 from keras.applications.resnet50 import ResNet50
-from efficientnet import EfficientNetB3
+from efficientnet import EfficientNetB4
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
@@ -31,7 +31,7 @@ gc.collect()
 
 img_target = 256#256
 SIZE = 256
-batch = 36
+batch = 16
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 
@@ -72,7 +72,7 @@ class My_Generator(Sequence):
             pass
     
     def mix_up(self, x, y):
-        lam = np.random.beta(0.4, 0.4)
+        lam = np.random.beta(0.2, 0.4)
         ori_index = np.arange(int(len(x)))
         index_array = np.arange(int(len(x)))
         np.random.shuffle(index_array)        
@@ -110,7 +110,7 @@ x = train_df['id_code']
 y = to_categorical(train_df['diagnosis'], num_classes=5)
 
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
-qwk_ckpt_name = './raw_effnetB3_pretrained_v2.h5'
+qwk_ckpt_name = './raw_effnet_pretrained_v2.h5'
 
 class QWKEvaluation(Callback):
     def __init__(self, validation_data=(), batch_size=64, interval=1):
@@ -142,6 +142,32 @@ class QWKEvaluation(Callback):
             if score >= max(self.history):
                 print('save checkpoint: ', score)
                 self.model.save(qwk_ckpt_name)
+
+#i = 1
+#kf = StratifiedKFold(n_splits=3)
+#df_x = train_df['id_code']
+#df_y = train_df['diagnosis']
+#kf.get_n_splits(df_x, df_y)
+
+#for train_index, test_index in kf.split(df_x, df_y):
+#print("TRAIN:", train_index, "TEST:", test_index)
+#train, val = train_df.iloc[train_index], train_df.iloc[test_index]
+# train = train.reset_index(drop = True)
+# val = val.reset_index(drop = True)
+# train_x = train['id_code']
+# val_x = val['id_code']
+# train_y = train['diagnosis']
+# val_y = val['diagnosis']
+'''data_gen_args = dict(rotation_range=360,
+                    width_shift_range=0.1,
+                    height_shift_range=0.1,
+                    vertical_flip = True,
+                    horizontal_flip = True,
+                    zoom_range=0.2,
+                    rescale = 1./255)
+image_datagen = ImageDataGenerator(**data_gen_args)
+val_datagen = ImageDataGenerator(rescale = 1./255)'''
+#image_datagen.fit(images, augment=True, seed=seed)
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 seq = iaa.Sequential(
     [
@@ -201,62 +227,61 @@ seq = iaa.Sequential(
         )
     ],
     random_order=True)
+'''train_generator = image_datagen.flow_from_dataframe(
+    train,
+    #directory="/nas-homes/joonl4/blind/train_images/",
+    directory="/nas-homes/joonl4/blind/train_images/",
+    x_col = 'id_code',
+    y_col = 'diagnosis',
+    target_size = (img_target,img_target),
+    color_mode = 'rgb',
+    class_mode = 'categorical',
+    batch_size = batch)
+val_generator = val_datagen.flow_from_dataframe(
+    val,
+    #directory="/nas-homes/joonl4/blind/train_images/",
+    directory="/nas-homes/joonl4/blind/train_images/",
+    x_col = 'id_code',
+    y_col = 'diagnosis',
+    target_size = (img_target,img_target),
+    color_mode = 'rgb',
+    class_mode = 'categorical',
+    batch_size = batch)'''
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True)
-#kf.get_n_splits(x)
-train_all = []
-evaluate_all = []
-for train_idx, test_idx in kf.split(x, y):
-    train_all.append(train_idx)
-    evaluate_all.append(test_idx)
-
-def get_cv_data(cv_index):
-    train_index = train_all[cv_index-1]
-    evaluate_index = evaluate_all[cv_index-1]
-    x_train = np.array(train_df.id_code[train_index])
-    y_train = np.array(train_df.diagnosis[train_index])
-    x_valid = np.array(train_df.id_code[evaluate_index])
-    y_valid = np.array(train_df.diagnosis[evaluate_index])
-    return x_train,y_train,x_valid,y_valid
-
-for cv_index in range(1,6):
-    qwk_ckpt_name = './raw_effnet_B3_fold'+str(fold)+'.h5'
-<<<<<<< HEAD
-    fold = cv_index
-    train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, 64, is_train=True)
-    train_mixup = My_Generator(train_x, train_y, 64, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, 64, is_train=False)
-=======
+kf = KFold(n_splits = 10)
+kf.get_n_splits(x)
+fold = 1
+for train_idx, test_idx in kf.split(x):
+    qwk_ckpt_name = './raw_effnet_pretrained_v2_fold'+str(fold)+'.h5'
     train_x, val_x = x[train_idx], x[test_idx]
     train_y, val_y = y[train_idx], y[test_idx]
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
-    train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
->>>>>>> 92b328b5441fabf1aa78ae5b602f488dcea8122e
+    train_generator = My_Generator(train_x, train_y, 16, is_train=True)
+    train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
+    val_generator = My_Generator(val_x, val_y, 16, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                        batch_size=batch, interval=1)
+                        batch_size=16, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 #model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
-    model = EfficientNetB3(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
     for layers in model.layers:
         layers.trainable=True
     inputs = model.input
     x = model.output
     x = Dropout(rate = 0.4) (x)
-    x = Dense(1024, activation = 'elu') (x)
+    x = Dense(512, activation = 'elu') (x)
     x = Dropout(rate = 0.25) (x)
     x = Dense(5, activation = 'softmax') (x)
     model = Model(inputs, x)
     model.compile(loss='categorical_crossentropy', optimizer = Adam(lr = 1e-3),
                 metrics= ['categorical_accuracy'])
     model.summary()
-    save_model_name = 'raw_pretrained_effnet_B3_fold'+str(fold)+'.hdf5'
+    model.load_weights("./raw_pretrain_effnet_B4.hdf5")
+    save_model_name = 'raw_pretrained_effnet_weights_v2_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-    cycle = 2560/batch * 15
-    cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.001, step_size = cycle)  
+    cycle = 2560/batch * 20
+    cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.003, step_size = cycle)  
     #model.load_weights(save_model_name)
     model.fit_generator(
         train_generator,
@@ -269,12 +294,12 @@ for cv_index in range(1,6):
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.compile(loss='categorical_crossentropy', optimizer =  Adam(lr = 1e-3),
+    model.compile(loss='categorical_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
                 metrics= ['categorical_accuracy'])
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=30,
+        epochs=40,
         verbose = 1,
         callbacks = [cyclic, model_checkpoint, qwk],
         validation_data = val_generator,

@@ -87,7 +87,7 @@ x = Dense(5, activation = 'softmax') (x)
 
 model = Model(inputs, x)
 
-model.compile(loss='categorical_crossentropy', optimizer ='adam',
+model.compile(loss='categorical_crossentropy', optimizer =Nadam(lr=1e-3),
              metrics= ['categorical_accuracy'])
 
 
@@ -97,8 +97,8 @@ save_model_name = 'raw_pretrain_effnet_B4_fulldata.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
-cycle = 35126/batch * 20
-cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)
+cycle = 35126/batch * 10
+cyclic = CyclicLR(mode='exp_range', base_lr = 0.00001, max_lr = 0.001, step_size = cycle)
 
 #model.load_weights("raw_pretrain_effnet_B4.hdf5")
 
