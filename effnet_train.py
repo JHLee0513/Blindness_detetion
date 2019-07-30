@@ -15,7 +15,7 @@ from keras.callbacks import Callback
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
 from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
@@ -248,10 +248,27 @@ val_generator = val_datagen.flow_from_dataframe(
     class_mode = 'categorical',
     batch_size = batch)'''
 
-kf = KFold(n_splits = 10)
-kf.get_n_splits(x)
-fold = 1
-for train_idx, test_idx in kf.split(x):
+kf = StratifiedKFold(n_splits = 5, shuffle = True)
+#kf.get_n_splits(x)
+train_all = []
+evaluate_all = []
+for train_idx, test_idx in kf.split(x, y):
+    train_all.append(train_idx)
+    evaluate_all.append(test_idx)
+
+def get_cv_data(cv_index):
+    train_index = train_all[cv_index-1]
+    evaluate_index = evaluate_all[cv_index-1]
+    x_train = np.array(train_df.id_code[train_index])
+    y_train = np.array(y[train_index])
+    x_valid = np.array(train_df.id_code[evaluate_index])
+    y_valid = np.array(y[evaluate_index])
+    return x_train,y_train,x_valid,y_valid
+
+for cv_index in range(1,6):
+    K.clear_session()
+    train_x, train_y, val_x, val_y = get_cv_data(cv_index)
+    fold = cv_index
     qwk_ckpt_name = './raw_effnet_pretrained_v2_fold'+str(fold)+'.h5'
     train_x, val_x = x[train_idx], x[test_idx]
     train_y, val_y = y[train_idx], y[test_idx]

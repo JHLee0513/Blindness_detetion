@@ -219,9 +219,9 @@ def get_cv_data(cv_index):
     train_index = train_all[cv_index-1]
     evaluate_index = evaluate_all[cv_index-1]
     x_train = np.array(train_df.id_code[train_index])
-    y_train = np.array(train_df.diagnosis[train_index])
+    y_train = np.array(y[train_index])
     x_valid = np.array(train_df.id_code[evaluate_index])
-    y_valid = np.array(train_df.diagnosis[evaluate_index])
+    y_valid = np.array(y[evaluate_index])
     return x_train,y_train,x_valid,y_valid
 
 for cv_index in range(1,6):
