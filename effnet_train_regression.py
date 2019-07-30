@@ -198,10 +198,11 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = KFold(n_splits = 10)
+kf = KFold(n_splits = 5)
 kf.get_n_splits(x)
 fold = 1
 for train_idx, test_idx in kf.split(x):
+    K.clear_session()
     train_x, val_x = x[train_idx], x[test_idx]
     train_y, val_y = y[train_idx], y[test_idx]
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
@@ -225,7 +226,8 @@ for train_idx, test_idx in kf.split(x):
                 metrics= ['mae'])
     model.summary()
     #get best weights from classification problem
-    model.load_weights("./raw_pretrained_effnet_weights_v2.hdf5", by_name = True)
+    model.load_weights("./raw_pretrain_effnet_B4.hdf5", by_name = True)
+    #raw_pretrained_effnet_weights_v2.hdf5
     save_model_name = 'raw_pretrained_effnet_weights_v2_regression_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
@@ -236,7 +238,7 @@ for train_idx, test_idx in kf.split(x):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=3, #shorter as the model is already quite tuned
+        epochs=5, 
         verbose = 1,
         callbacks = [model_checkpoint, qwk],
         validation_data = val_generator,
@@ -248,10 +250,12 @@ for train_idx, test_idx in kf.split(x):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=120,
+        epochs=60,
         verbose = 1,
         callbacks = [cyclic, model_checkpoint, qwk],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
+    print("#####################FOLD"+str(fold+"############BEST QWK SCORE IS"))
+    print(max(qwk.history))
     fold += 1        
