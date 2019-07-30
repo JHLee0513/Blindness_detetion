@@ -221,19 +221,11 @@ def get_cv_data(cv_index):
 
 for cv_index in range(1,6):
     qwk_ckpt_name = './raw_effnet_B3_fold'+str(fold)+'.h5'
-<<<<<<< HEAD
     fold = cv_index
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     train_generator = My_Generator(train_x, train_y, 64, is_train=True)
     train_mixup = My_Generator(train_x, train_y, 64, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, 64, is_train=False)
-=======
-    train_x, val_x = x[train_idx], x[test_idx]
-    train_y, val_y = y[train_idx], y[test_idx]
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
-    train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
->>>>>>> 92b328b5441fabf1aa78ae5b602f488dcea8122e
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
