@@ -21,7 +21,7 @@ from keras.losses import binary_crossentropy, categorical_crossentropy
 from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
 from keras.applications.xception import Xception
 from keras.applications.resnet50 import ResNet50
-from efficientnet import EfficientNetB4
+from efficientnet import EfficientNetB3
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
@@ -31,7 +31,7 @@ gc.collect()
 
 img_target = 256#256
 SIZE = 256
-batch = 64
+batch = 36
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 
@@ -72,7 +72,7 @@ class My_Generator(Sequence):
             pass
     
     def mix_up(self, x, y):
-        lam = np.random.beta(0.2, 0.4)
+        lam = np.random.beta(0.4, 0.4)
         ori_index = np.arange(int(len(x)))
         index_array = np.arange(int(len(x)))
         np.random.shuffle(index_array)        
@@ -209,11 +209,11 @@ for train_idx, test_idx in kf.split(x):
     qwk_ckpt_name = './raw_effnet_B3_fold'+str(fold)+'.h5'
     train_x, val_x = x[train_idx], x[test_idx]
     train_y, val_y = y[train_idx], y[test_idx]
-    train_generator = My_Generator(train_x, train_y, 64, is_train=True)
-    train_mixup = My_Generator(train_x, train_y, 64, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, 64, is_train=False)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
+    train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
+    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                        batch_size=64, interval=1)
+                        batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 #model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
