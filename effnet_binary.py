@@ -253,6 +253,7 @@ for cv_index in range(1,6):
     save_model_name = 'raw_effnet_pretrained_binary_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
+    csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
     cycle = 2560/batch * 30
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.003, step_size = cycle)  
     #model.load_weights(save_model_name)
@@ -274,7 +275,7 @@ for cv_index in range(1,6):
         steps_per_epoch=2560/batch,
         epochs=30,
         verbose = 1,
-        callbacks = [cyclic, model_checkpoint, qwk],
+        callbacks = [cyclic, model_checkpoint, qwk, csv],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)

@@ -270,8 +270,6 @@ for cv_index in range(1,6):
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     fold = cv_index
     qwk_ckpt_name = './raw_effnet_pretrained_v2_fold'+str(fold)+'.h5'
-    train_x, val_x = x[train_idx], x[test_idx]
-    train_y, val_y = y[train_idx], y[test_idx]
     train_generator = My_Generator(train_x, train_y, 16, is_train=True)
     train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, 16, is_train=False)
@@ -297,6 +295,7 @@ for cv_index in range(1,6):
     save_model_name = 'raw_pretrained_effnet_weights_v2_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
+    csv = CSVLogger('./raw_pretrained_effnet_v2_fold'+str(fold)+'.csv', separator=',', append=False)
     cycle = 2560/batch * 20
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.003, step_size = cycle)  
     #model.load_weights(save_model_name)
@@ -306,7 +305,7 @@ for cv_index in range(1,6):
         epochs=5,
         verbose = 1,
         #initial_epoch = 14,
-        callbacks = [model_checkpoint],
+        callbacks = [model_checkpoint, csv],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
@@ -318,7 +317,7 @@ for cv_index in range(1,6):
         steps_per_epoch=2560/batch,
         epochs=40,
         verbose = 1,
-        callbacks = [cyclic, model_checkpoint, qwk],
+        callbacks = [cyclic, model_checkpoint, qwk, csv],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
