@@ -206,7 +206,7 @@ kf = StratifiedKFold(n_splits = 5, shuffle = True)
 #kf.get_n_splits(x)
 train_all = []
 evaluate_all = []
-for train_idx, test_idx in kf.split(x, y):
+for train_idx, test_idx in kf.split(x, train_df['diagnosis']):
     train_all.append(train_idx)
     evaluate_all.append(test_idx)
 
