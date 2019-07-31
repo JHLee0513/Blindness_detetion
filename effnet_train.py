@@ -248,7 +248,7 @@ val_generator = val_datagen.flow_from_dataframe(
     class_mode = 'categorical',
     batch_size = batch)'''
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True)
+kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420)
 #kf.get_n_splits(x)
 train_all = []
 evaluate_all = []
