@@ -143,31 +143,6 @@ class QWKEvaluation(Callback):
                 print('save checkpoint: ', score)
                 self.model.save(qwk_ckpt_name)
 
-#i = 1
-#kf = StratifiedKFold(n_splits=3)
-#df_x = train_df['id_code']
-#df_y = train_df['diagnosis']
-#kf.get_n_splits(df_x, df_y)
-
-#for train_index, test_index in kf.split(df_x, df_y):
-#print("TRAIN:", train_index, "TEST:", test_index)
-#train, val = train_df.iloc[train_index], train_df.iloc[test_index]
-# train = train.reset_index(drop = True)
-# val = val.reset_index(drop = True)
-# train_x = train['id_code']
-# val_x = val['id_code']
-# train_y = train['diagnosis']
-# val_y = val['diagnosis']
-'''data_gen_args = dict(rotation_range=360,
-                    width_shift_range=0.1,
-                    height_shift_range=0.1,
-                    vertical_flip = True,
-                    horizontal_flip = True,
-                    zoom_range=0.2,
-                    rescale = 1./255)
-image_datagen = ImageDataGenerator(**data_gen_args)
-val_datagen = ImageDataGenerator(rescale = 1./255)'''
-#image_datagen.fit(images, augment=True, seed=seed)
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 seq = iaa.Sequential(
     [
@@ -227,26 +202,6 @@ seq = iaa.Sequential(
         )
     ],
     random_order=True)
-'''train_generator = image_datagen.flow_from_dataframe(
-    train,
-    #directory="/nas-homes/joonl4/blind/train_images/",
-    directory="/nas-homes/joonl4/blind/train_images/",
-    x_col = 'id_code',
-    y_col = 'diagnosis',
-    target_size = (img_target,img_target),
-    color_mode = 'rgb',
-    class_mode = 'categorical',
-    batch_size = batch)
-val_generator = val_datagen.flow_from_dataframe(
-    val,
-    #directory="/nas-homes/joonl4/blind/train_images/",
-    directory="/nas-homes/joonl4/blind/train_images/",
-    x_col = 'id_code',
-    y_col = 'diagnosis',
-    target_size = (img_target,img_target),
-    color_mode = 'rgb',
-    class_mode = 'categorical',
-    batch_size = batch)'''
 
 kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420)
 #kf.get_n_splits(x)
