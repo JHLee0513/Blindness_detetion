@@ -268,7 +268,7 @@ for cv_index in range(4,6):
         steps_per_epoch=2560/batch,
         epochs=60,
         verbose = 1,
-        callbacks = [cyclic, model_checkpoint, qwk, csv],
+        callbacks = [cyclic, model_checkpoint, qwk],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
