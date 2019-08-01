@@ -224,7 +224,8 @@ def get_cv_data(cv_index):
     y_valid = np.array(y[evaluate_index])
     return x_train,y_train,x_valid,y_valid
 
-for cv_index in range(1,6):
+#for cv_index in range(1,6):
+for cv_index in range(4,6):
     fold = cv_index
     qwk_ckpt_name = './raw_effnet_pretrained_binary_fold'+str(fold)+'.h5'
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
