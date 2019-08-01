@@ -9,6 +9,7 @@ from keras.utils.vis_utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import *
 from keras import backend as K
+from sklearn.utils import class_weight, shuffle
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from keras.utils import Sequence, to_categorical
@@ -23,7 +24,7 @@ gc.enable()
 gc.collect()
 
 img_target = 256
-batch = 8
+batch = 2
 train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
 print(train_df.head())
 train_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
@@ -228,7 +229,7 @@ qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=16, interval=1)
 
 # warmup
-model.compile(loss='binary_crossentropy', optimizer =Adam(lr=1e-3),
+model.compile(loss='binary_crossentropy', optimizer = SGD(lr=0.001, momentum = 0.95, nesterov = True),
              metrics= [])
 model.fit_generator(
     train_generator,
