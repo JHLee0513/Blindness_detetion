@@ -227,7 +227,7 @@ def get_cv_data(cv_index):
 #for cv_index in range(1,6):
 for cv_index in range(4,6):
     fold = cv_index
-    qwk_ckpt_name = './raw_effnet_pretrained_binary_fold'+str(fold)+'.h5'
+    qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_fold'+str(fold)+'.h5'
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     train_generator = My_Generator(train_x, train_y, 16, is_train=True)
     train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
@@ -251,10 +251,10 @@ for cv_index in range(4,6):
                 metrics= ['accuracy'])
     model.summary()
     model.load_weights("./raw_pretrain_effnet_B4.hdf5")
-    save_model_name = 'raw_effnet_pretrained_binary_fold'+str(fold)+'.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-    csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
+    #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
     cycle = 2560/batch * 30
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.003, step_size = cycle)  
     #model.load_weights(save_model_name)
@@ -276,7 +276,7 @@ for cv_index in range(4,6):
         steps_per_epoch=2560/batch,
         epochs=30,
         verbose = 1,
-        callbacks = [cyclic, model_checkpoint, qwk, csv],
+        callbacks = [cyclic, model_checkpoint, qwk],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)

@@ -243,20 +243,20 @@ for cv_index in range(4,6):
     #get best weights from classification problem
     model.load_weights("./raw_pretrain_effnet_B4.hdf5", by_name = True)
     #raw_pretrained_effnet_weights_v2.hdf5
-    save_model_name = 'raw_pretrained_effnet_weights_v2_regression_fold'+str(fold)+'.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_pretrained_effnet_weights_v2_regression_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     cycle = 2560/batch * 20
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)  
     #model.load_weights(save_model_name)
-    qwk_ckpt_name = './raw_effnet_pretrained_v2_regression_fold'+str(fold)+'.h5'
-    csv = CSVLogger('./raw_effnet_pretrained_v2_regression_fold'+str(fold)+'.csv', separator=',', append=False)
+    qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_v2_regression_fold'+str(fold)+'.h5'
+    #csv = CSVLogger('./raw_effnet_pretrained_v2_regression_fold'+str(fold)+'.csv', separator=',', append=False)
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
         epochs=5, 
         verbose = 1,
-        callbacks = [model_checkpoint, qwk, csv],
+        callbacks = [model_checkpoint, qwk],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
