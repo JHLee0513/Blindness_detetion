@@ -15,6 +15,8 @@ from keras.utils import Sequence, to_categorical
 from keras.callbacks import Callback
 from efficientnet import EfficientNetB4
 from keras.callbacks import LearningRateScheduler
+import imgaug as ia
+from imgaug import augmenters as iaa
 import scipy
 import gc
 gc.enable()
@@ -23,9 +25,13 @@ gc.collect()
 img_target = 256
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
+print(train_df.head())
 train_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
-train_df2 = train_df2.rename(columns={"level": "label"})
 print(train_df2.head())
+#train_df2 = train_df2.rename(columns={"level": "label"})
+train_df2 = train_df2.drop(["Usage"], axis = 1)
+train_df = train_df.astype(str)
+train_df2 = train_df2.astype(str)
 train_df = pd.concat([train_df, train_df2], axis = 0, sort = False)
 train_df.reset_index(drop = True)
 val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
@@ -33,9 +39,9 @@ train_df['image'] = train_df['image'].astype(str) + ".jpeg"
 train_df = train_df.astype(str)
 val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
 val_df = val_df.astype(str)
-
+print(train_df.head())
 x = train_df['image']
-y = to_categorical(train_df['label'], num_classes=5)
+y = to_categorical(train_df['level'], num_classes=5)
 val_x = val_df['id_code']
 val_y = val_df['diagnosis']
 
