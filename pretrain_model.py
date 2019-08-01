@@ -25,6 +25,7 @@ batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
 train_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
 train_df2.rename(columns={"level": "label"})
+print(train_df2.head())
 train_df = pd.concat([train_df, train_df2], axis = 0, sort = False)
 train_df.reset_index(drop = True)
 val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
