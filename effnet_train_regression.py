@@ -241,7 +241,7 @@ for cv_index in range(4,6):
                 metrics= ['mae'])
     model.summary()
     #get best weights from classification problem
-    model.load_weights("./raw_pretrain_effnet_B4.hdf5", by_name = True)
+    model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
     #raw_pretrained_effnet_weights_v2.hdf5
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_pretrained_effnet_weights_v2_regression_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',

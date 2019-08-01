@@ -250,7 +250,7 @@ for cv_index in range(4,6):
     model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy'])
     model.summary()
-    model.load_weights("./raw_pretrain_effnet_B4.hdf5")
+    model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
