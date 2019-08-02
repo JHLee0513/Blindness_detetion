@@ -109,8 +109,10 @@ y = to_categorical(train_df['diagnosis'], num_classes=5)
 #binarized labeling
 for row in y:
     idx = np.argmax(row)
-    for i in range(idx):
-        row[i] = 1
+    for i in range(idx+1):
+        row[i] = 0.9 #label smoothening
+    for j in range(5, idx+1, -1):
+        row[j] = 0.1 #label smoothening
 
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 qwk_ckpt_name = './raw_effnet_pretrained_v2.h5'
@@ -227,7 +229,7 @@ def get_cv_data(cv_index):
 #for cv_index in range(1,6):
 for cv_index in range(4,6):
     fold = cv_index
-    qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_fold'+str(fold)+'.h5'
+    qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold'+str(fold)+'.h5'
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     train_generator = My_Generator(train_x, train_y, 16, is_train=True)
     train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
@@ -251,7 +253,7 @@ for cv_index in range(4,6):
                 metrics= ['accuracy'])
     model.summary()
     model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_fold'+str(fold)+'.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
