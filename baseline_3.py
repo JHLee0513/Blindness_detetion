@@ -50,8 +50,10 @@ for train_idx, test_idx in kf.split(x, y):
 def get_cv_data(cv_index):
     train_index = train_all[cv_index-1]
     evaluate_index = evaluate_all[cv_index-1]
-    train = train_df([train_index])
-    val = train_df([evaluate_index])
+    train = train_df.iloc[train_index]
+    val = train_df.iloc[evaluate_index]
+    train.reset_index(drop = True)
+    val.reset_index(drop = True)
     return train, val
 
 for fold in range(5):
