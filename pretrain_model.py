@@ -31,10 +31,7 @@ gc.enable()
 gc.collect()
 
 img_target = 256
-<<<<<<< HEAD
-=======
 SIZE = 256
->>>>>>> 6eef689f9180d6bb5659a02f9e7b08d97f61dc77
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
 print(train_df.head())
@@ -56,11 +53,6 @@ x = train_df['image']
 y = to_categorical(train_df['level'], num_classes=5)
 val_x = val_df['id_code']
 val_y = to_categorical(val_df['diagnosis'], num_classes=5)
-<<<<<<< HEAD
-print(len(x),len(y),len(val_x),len(val_y))
-=======
-
->>>>>>> 6eef689f9180d6bb5659a02f9e7b08d97f61dc77
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -105,11 +97,7 @@ class My_Generator(Sequence):
     def train_generate(self, batch_x, batch_y):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
-<<<<<<< HEAD
-            img = cv2.imread('/nas-homes/joonl4/blind_2015/train/'+sample+'.png')
-=======
             img = cv2.imread('/nas-homes/joonl4/blind_2015/train/'+sample+'.jepg')
->>>>>>> 6eef689f9180d6bb5659a02f9e7b08d97f61dc77
             img = cv2.resize(img, (SIZE, SIZE))
             if(self.is_augment):
                 img = seq.augment_image(img)
