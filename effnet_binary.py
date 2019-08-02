@@ -111,7 +111,7 @@ for row in y:
     idx = np.argmax(row)
     for i in range(idx+1):
         row[i] = 0.9 #label smoothening
-    for j in range(5, idx+1, -1):
+    for j in range(4, idx+1, -1):
         row[j] = 0.1 #label smoothening
 
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
@@ -227,7 +227,7 @@ def get_cv_data(cv_index):
     return x_train,y_train,x_valid,y_valid
 
 #for cv_index in range(1,6):
-for cv_index in range(4,6):
+for cv_index in range(1,6):
     fold = cv_index
     qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold'+str(fold)+'.h5'
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
