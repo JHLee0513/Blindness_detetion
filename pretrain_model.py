@@ -229,8 +229,8 @@ model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
 qwk_ckpt_name = './raw_effnet_pretrained_fulldata.h5'
-train_generator = My_Generator(x, y, 8, is_train=True)
-train_mixup = My_Generator(x, y, 8, is_train=True, mix=True, augment=True)
+train_generator = My_Generator(x, y, 8, is_train=False)
+train_mixup = My_Generator(x, y, 8, is_train=False, mix=True, augment=True)
 val_generator = My_Generator(val_x, val_y, 8, is_train=False)
 qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=16, interval=1)
