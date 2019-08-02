@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import gc
+import cv2
 from utils.clr_callback import *
 from keras import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
@@ -9,22 +10,31 @@ from keras.utils.vis_utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import *
 from keras import backend as K
-from sklearn.utils import class_weight, shuffle
-from tqdm import tqdm
-from sklearn.metrics import cohen_kappa_score, accuracy_score
 from keras.utils import Sequence, to_categorical
 from keras.callbacks import Callback
+from tqdm import tqdm
+from sklearn.metrics import cohen_kappa_score, accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.utils import class_weight, shuffle
+from keras.losses import binary_crossentropy, categorical_crossentropy
+from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
+from keras.applications.xception import Xception
+from keras.applications.resnet50 import ResNet50
 from efficientnet import EfficientNetB4
-from keras.callbacks import LearningRateScheduler
-import imgaug as ia
-from imgaug import augmenters as iaa
 import scipy
+from imgaug import augmenters as iaa
+import imgaug as ia
 import gc
 import cv2
 gc.enable()
 gc.collect()
 
 img_target = 256
+<<<<<<< HEAD
+=======
+SIZE = 256
+>>>>>>> 6eef689f9180d6bb5659a02f9e7b08d97f61dc77
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
 print(train_df.head())
@@ -46,7 +56,11 @@ x = train_df['image']
 y = to_categorical(train_df['level'], num_classes=5)
 val_x = val_df['id_code']
 val_y = to_categorical(val_df['diagnosis'], num_classes=5)
+<<<<<<< HEAD
 print(len(x),len(y),len(val_x),len(val_y))
+=======
+
+>>>>>>> 6eef689f9180d6bb5659a02f9e7b08d97f61dc77
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -91,7 +105,11 @@ class My_Generator(Sequence):
     def train_generate(self, batch_x, batch_y):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
+<<<<<<< HEAD
             img = cv2.imread('/nas-homes/joonl4/blind_2015/train/'+sample+'.png')
+=======
+            img = cv2.imread('/nas-homes/joonl4/blind_2015/train/'+sample+'.jepg')
+>>>>>>> 6eef689f9180d6bb5659a02f9e7b08d97f61dc77
             img = cv2.resize(img, (SIZE, SIZE))
             if(self.is_augment):
                 img = seq.augment_image(img)
@@ -230,12 +248,12 @@ qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=16, interval=1)
 
 # warmup
-model.compile(loss='binary_crossentropy', optimizer = SGD(lr=0.001, momentum = 0.95, nesterov = True),
+model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=1e-3, momentum = 0.95, nesterov = True),
              metrics= [])
 model.fit_generator(
     train_generator,
     steps_per_epoch=88702/batch,
-    epochs=3,
+    epochs=5,
     verbose = 1,
     callbacks = [model_checkpoint, qwk],
     validation_data = val_generator,
@@ -244,7 +262,9 @@ model.fit_generator(
 cycle = 88702/batch * 10
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.00001, max_lr = 0.001, step_size = cycle)
 
-model.compile(loss='binary_crossentropy', optimizer = SGD(lr=0.001, momentum = 0.95, nesterov = True),
+model.load_weights(save_model_name)
+
+model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=0.001, momentum = 0.95, nesterov = True),
              metrics= [])
 
 model.fit_generator(
