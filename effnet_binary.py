@@ -110,10 +110,11 @@ y = to_categorical(train_df['diagnosis'], num_classes=5)
 for row in y:
     idx = np.argmax(row)
     for i in range(idx+1):
-        row[i] = 0.9 #label smoothening
-    for j in range(4, idx+1, -1):
-        row[j] = 0.1 #label smoothening
-
+        row[i] = 0.9 + 0.09 * (4.-i) / 4. #label smoothening
+    for j in range(idx+1, 5):
+#print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
+        row[j] = 0.04 + 0.01* (4-j) / 4. #label smoothening
+    #print(row)
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 qwk_ckpt_name = './raw_effnet_pretrained_v2.h5'
 
@@ -231,11 +232,11 @@ for cv_index in range(1,6):
     fold = cv_index
     qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold'+str(fold)+'.h5'
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, 16, is_train=True)
-    train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, 16, is_train=False)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
+    train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
+    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                        batch_size=16, interval=1)
+                        batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 #model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
@@ -250,7 +251,7 @@ for cv_index in range(1,6):
     x = Dense(5, activation = 'sigmoid') (x)
     model = Model(inputs, x)
     model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
-                metrics= ['accuracy'])
+                metrics= ['accuracy', 'mse'])
     model.summary()
     model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold'+str(fold)+'.hdf5'
@@ -263,16 +264,17 @@ for cv_index in range(1,6):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=5,
+        epochs=10,
         verbose = 1,
         #initial_epoch = 14,
-        callbacks = [model_checkpoint],
+        callbacks = [model_checkpoint, qwk],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
+    '''
     model.load_weights(save_model_name)
-    model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.01, momentum = 0.9, nesterov = True),
-                metrics= ['accuracy'])
+    model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),
+                metrics= ['accuracy', 'mse'])
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
@@ -286,3 +288,4 @@ for cv_index in range(1,6):
     #model.load_weights(save_model_name)
 
     #model.save('raw_effnet_pretrained_v2.h5')
+    '''
