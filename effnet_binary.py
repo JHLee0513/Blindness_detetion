@@ -110,10 +110,10 @@ y = to_categorical(train_df['diagnosis'], num_classes=5)
 for row in y:
     idx = np.argmax(row)
     for i in range(idx+1):
-        row[i] = 0.9 + 0.09 * (4.-i) / 4. #label smoothening
+        row[i] = 0.95 #label smoothening
     for j in range(idx+1, 5):
 #print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
-        row[j] = 0.04 + 0.01* (4-j) / 4. #label smoothening
+        row[j] =  #label smoothening
     #print(row)
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 qwk_ckpt_name = './raw_effnet_pretrained_v2.h5'
