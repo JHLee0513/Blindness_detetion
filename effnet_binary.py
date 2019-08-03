@@ -110,10 +110,11 @@ y = to_categorical(train_df['diagnosis'], num_classes=5)
 for row in y:
     idx = np.argmax(row)
     for i in range(idx+1):
-        row[i] = 0.95 #label smoothening
+        row[i] = 0.95 
+#label smoothening
     for j in range(idx+1, 5):
 #print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
-        row[j] =  #label smoothening
+        row[j] = 0.05 #label smoothening
     #print(row)
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 qwk_ckpt_name = './raw_effnet_pretrained_v2.h5'
@@ -134,9 +135,10 @@ class QWKEvaluation(Callback):
                                                   workers=1, use_multiprocessing=True,
                                                   verbose=1)
             def flatten(y):
-                #return np.argmax(y, axis=1).reshape(-1)
-                # return np.sum(y.astype(int), axis=1) - 1
-                return np.rint(np.sum(y,axis=1)).astype(int)
+                #print(np.argmax(y,axis = 1).astype(int))
+                #return np.argmax(y, axis=1).astype(int)
+                return np.rint(np.sum(y, axis=1)).astype(int) - 1
+                #return np.rint(np.sum(y,axis=1)).astype(int)
             
             score = cohen_kappa_score(flatten(self.y_val),
                                       flatten(y_pred),
