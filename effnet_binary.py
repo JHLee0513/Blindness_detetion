@@ -154,7 +154,7 @@ class QWKEvaluation(Callback):
             if score >= max(self.history):
                 print('save checkpoint: ', score)
                 self.model.save(qwk_ckpt_name)
-                log.wrte(str(log_fold) + ": " + str(score) + "\n")
+                log.write(str(log_fold) + ": " + str(score) + "\n")
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 seq = iaa.Sequential(
