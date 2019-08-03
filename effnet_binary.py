@@ -237,7 +237,7 @@ def get_cv_data(cv_index):
 for cv_index in range(1,6):
     fold = cv_index
     log_fold = cv_index
-    qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold'+str(fold)+'.h5'
+    qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True)
     train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
@@ -278,6 +278,8 @@ for cv_index in range(1,6):
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
+    model.load_weights(save_model_name)
+    model.save("/nas-homes/joonl4/Blind_weights/raw_effnet_pretrained_binary_smoothen_fold"+str(fold)+ ".h5")
     '''
     model.load_weights(save_model_name)
     model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),
