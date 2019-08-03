@@ -210,7 +210,7 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagent', include_top = False, pooling = 'avg')
+model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagenet', include_top = False, pooling = 'avg')
 
 for layers in model.layers:
     layers.trainable=True
