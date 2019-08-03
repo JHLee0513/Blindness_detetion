@@ -38,6 +38,9 @@ train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 train_df = train_df.astype(str)
 test_df = test_df.astype(str)
+
+log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
+log_fold = 1
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -151,6 +154,7 @@ class QWKEvaluation(Callback):
             if score >= max(self.history):
                 print('save checkpoint: ', score)
                 self.model.save(qwk_ckpt_name)
+                log.wrte(str(log_fold) + ": " + str(score) + "\n")
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 seq = iaa.Sequential(
@@ -232,6 +236,7 @@ def get_cv_data(cv_index):
 #for cv_index in range(1,6):
 for cv_index in range(1,6):
     fold = cv_index
+    log_fold = cv_index
     qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold'+str(fold)+'.h5'
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True)
