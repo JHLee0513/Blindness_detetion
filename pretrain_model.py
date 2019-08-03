@@ -44,9 +44,9 @@ train_df2 = train_df2.astype(str)
 train_df = pd.concat([train_df, train_df2], axis = 0, sort = False)
 train_df.reset_index(drop = True)
 val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
-train_df['image'] = train_df['image'].astype(str) + ".jpeg"
+#train_df['image'] = train_df['image'].astype(str) + ".jpeg"
 train_df = train_df.astype(str)
-val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
+#val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
 val_df = val_df.astype(str)
 print(train_df.head())
 x = train_df['image']
@@ -97,7 +97,7 @@ class My_Generator(Sequence):
     def train_generate(self, batch_x, batch_y):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
-            img = cv2.imread('/nas-homes/joonl4/blind_2015/train/'+sample+'.jepg')
+            img = cv2.imread('/nas-homes/joonl4/blind_2015/train/'+sample+'.jpeg')
             img = cv2.resize(img, (SIZE, SIZE))
             if(self.is_augment):
                 img = seq.augment_image(img)
@@ -118,7 +118,7 @@ class My_Generator(Sequence):
         batch_y = np.array(batch_y, np.float32)
         return batch_images, batch_y
 
-qwk_ckpt_name = '.h5'
+'''qwk_ckpt_name = '.h5'
 
 class QWKEvaluation(Callback):
     def __init__(self, validation_data=(), batch_size=64, interval=1):
@@ -149,7 +149,7 @@ class QWKEvaluation(Callback):
             self.history.append(score)
             if score >= max(self.history):
                 print('save checkpoint: ', score)
-                self.model.save(qwk_ckpt_name)
+                self.model.save(qwk_ckpt_name)'''
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 seq = iaa.Sequential(
     [
@@ -210,8 +210,7 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-
-model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights=None, include_top = False, pooling = 'avg')
+model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagent', include_top = False, pooling = 'avg')
 
 for layers in model.layers:
     layers.trainable=True
@@ -227,13 +226,9 @@ model = Model(inputs, x)
 save_model_name = '/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_fulldata.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-
-qwk_ckpt_name = './raw_effnet_pretrained_fulldata.h5'
 train_generator = My_Generator(x, y, 8, is_train=False)
 train_mixup = My_Generator(x, y, 8, is_train=False, mix=True, augment=True)
 val_generator = My_Generator(val_x, val_y, 8, is_train=False)
-qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                        batch_size=16, interval=1)
 
 # warmup
 model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=1e-3, momentum = 0.95, nesterov = True),
@@ -243,23 +238,20 @@ model.fit_generator(
     steps_per_epoch=88702/batch,
     epochs=5,
     verbose = 1,
-    callbacks = [model_checkpoint, qwk],
+    callbacks = [model_checkpoint],
     validation_data = val_generator,
     validation_steps = 3662/batch)
 
 cycle = 88702/batch * 10
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.00001, max_lr = 0.001, step_size = cycle)
-
 model.load_weights(save_model_name)
-
 model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=0.001, momentum = 0.95, nesterov = True),
              metrics= [])
-
 model.fit_generator(
     train_mixup,
     steps_per_epoch=88702/batch,
     epochs=10,
     verbose = 1,
-    callbacks = [model_checkpoint, qwk],
+    callbacks = [model_checkpoint],
     validation_data = val_generator,
     validation_steps = 3662/batch)
