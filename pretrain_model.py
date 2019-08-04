@@ -50,9 +50,9 @@ train_x = train_df['image']
 train_y = to_categorical(train_df['level'], num_classes=5)
 val_x = val_df['id_code']
 val_y = to_categorical(val_df['diagnosis'], num_classes=5)
-print(train_x)
-print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-print(val_x)
+# print(train_x)
+# print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+# print(val_x)
 
 class My_Generator(Sequence):
 
@@ -112,6 +112,7 @@ class My_Generator(Sequence):
     def valid_generate(self, batch_x, batch_y):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
+            print('/nas-homes/joonl4/blind/train_images/'+sample+'.png')
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample+'.png')
             img = cv2.resize(img, (SIZE, SIZE))
             batch_images.append(img)
