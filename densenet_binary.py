@@ -31,7 +31,7 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 256#256
+img_target = 256
 SIZE = 256
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
@@ -270,31 +270,14 @@ for cv_index in range(1,6):
     #model.load_weights(save_model_name)
     model.fit_generator(
         train_generator,
-        steps_per_epoch=2560/batch,
+        steps_per_epoch=10,#2560/batch,
         epochs=20,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, cyclic, qwk],
         validation_data = val_generator,
-        validation_steps = 1100/batch,
+        validation_steps = 10,#1100/batch,
         workers=1, use_multiprocessing=False)
     
     model.load_weights(save_model_name)
     model.save('/nas-homes/joonl4/Blind_weights/raw_densenet_pretrained_binary_smoothen_fold'+str(fold)+'.h5')
-    '''
-    model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),
-                metrics= ['accuracy', 'mse'])
-    model.fit_generator(
-        train_generator,
-        steps_per_epoch=2560/batch,
-        epochs=30,
-        verbose = 1,
-        callbacks = [cyclic, model_checkpoint, qwk],
-        validation_data = val_generator,
-        validation_steps = 1100/batch,
-        workers=1, use_multiprocessing=False)
-    fold += 1
-    #model.load_weights(save_model_name)
-
-    #model.save('raw_effnet_pretrained_v2.h5')
-    '''
