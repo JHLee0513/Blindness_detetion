@@ -106,11 +106,11 @@ model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
 
 # warmup
 model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=1e-3, momentum = 0.95, nesterov = True),
-             metrics= [])
+             metrics= ['categorical_accuracy'])
 model.fit_generator(
     train_generator,
     steps_per_epoch=88702/batch,
-    epochs=5,
+    epochs=3,
     verbose = 1,
     callbacks = [model_checkpoint],
     validation_data = val_generator,
@@ -120,7 +120,7 @@ cycle = 88702/batch * 10
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.00001, max_lr = 0.001, step_size = cycle)
 model.load_weights(save_model_name)
 model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=0.001, momentum = 0.95, nesterov = True),
-             metrics= [])
+             metrics= [categorical_accuracy])
 model.fit_generator(
     train_mixup,
     steps_per_epoch=88702/batch,
