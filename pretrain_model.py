@@ -25,8 +25,6 @@ from efficientnet import EfficientNetB4
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
-import gc
-import cv2
 gc.enable()
 gc.collect()
 
@@ -48,11 +46,14 @@ val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df = train_df.astype(str)
 #val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
 val_df = val_df.astype(str)
-print(train_df.head())
 train_x = train_df['image']
 train_y = to_categorical(train_df['level'], num_classes=5)
 val_x = val_df['id_code']
 val_y = to_categorical(val_df['diagnosis'], num_classes=5)
+print(train_x)
+print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+print(val_x)
+
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
