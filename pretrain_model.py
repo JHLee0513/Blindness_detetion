@@ -42,9 +42,9 @@ train_df2 = train_df2.astype(str)
 train_df = pd.concat([train_df, train_df2], axis = 0, sort = False)
 train_df.reset_index(drop = True)
 val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
-#train_df['image'] = train_df['image'].astype(str) + ".jpeg"
+train_df['image'] = train_df['image'].astype(str) + ".jpeg"
 train_df = train_df.astype(str)
-#val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
+val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
 val_df = val_df.astype(str)
 train_x = train_df['image']
 train_y = to_categorical(train_df['level'], num_classes=5)
