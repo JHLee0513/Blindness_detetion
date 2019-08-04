@@ -34,9 +34,9 @@ img_target = 256
 SIZE = 256
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
-print(train_df.head())
+#print(train_df.head())
 train_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
-print(train_df2.head())
+#print(train_df2.head())
 #train_df2 = train_df2.rename(columns={"level": "label"})
 train_df2 = train_df2.drop(["Usage"], axis = 1)
 train_df = train_df.astype(str)
@@ -48,9 +48,9 @@ val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df = train_df.astype(str)
 #val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
 val_df = val_df.astype(str)
-print(train_df.head())
-x = train_df['image']
-y = to_categorical(train_df['level'], num_classes=5)
+#print(train_df.head())
+train_x = train_df['image']
+train_y = to_categorical(train_df['level'], num_classes=5)
 val_x = val_df['id_code']
 val_y = to_categorical(val_df['diagnosis'], num_classes=5)
 class My_Generator(Sequence):
@@ -226,8 +226,8 @@ model = Model(inputs, x)
 save_model_name = '/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_fulldata.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-train_generator = My_Generator(x, y, 8, is_train=False)
-train_mixup = My_Generator(x, y, 8, is_train=False, mix=True, augment=True)
+train_generator = My_Generator(train_x, train_y, 8, is_train=False)
+train_mixup = My_Generator(train_x, train_y, 8, is_train=False, mix=True, augment=True)
 val_generator = My_Generator(val_x, val_y, 8, is_train=False)
 
 # warmup
