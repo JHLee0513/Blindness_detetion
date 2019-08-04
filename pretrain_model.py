@@ -48,7 +48,7 @@ val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df = train_df.astype(str)
 #val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
 val_df = val_df.astype(str)
-#print(train_df.head())
+print(train_df.head())
 train_x = train_df['image']
 train_y = to_categorical(train_df['level'], num_classes=5)
 val_x = val_df['id_code']
