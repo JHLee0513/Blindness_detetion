@@ -279,7 +279,7 @@ for cv_index in range(1,6):
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/Blind_weights/raw_effnet_pretrained_binary_smoothen_fold"+str(fold)+ ".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold"+str(fold)+ ".h5")
     '''
     model.load_weights(save_model_name)
     model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),

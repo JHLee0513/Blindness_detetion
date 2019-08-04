@@ -39,8 +39,8 @@ test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 train_df = train_df.astype(str)
 test_df = test_df.astype(str)
 
-log = open("/home/joonl4/Blindness_detection_densenet_binary_log.txt", "a")
-log_fold = 1
+# log = open("/home/joonl4/Blindness_detection_densenet_binary_log.txt", "a")
+# log_fold = 1
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -120,41 +120,7 @@ for row in y:
         row[j] = 0.05 #label smoothening
     #print(row)
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
-qwk_ckpt_name = './raw_effnet_pretrained_v2.h5'
-
-class QWKEvaluation(Callback):
-    def __init__(self, validation_data=(), batch_size=64, interval=1):
-        super(Callback, self).__init__()
-
-        self.interval = interval
-        self.batch_size = batch_size
-        self.valid_generator, self.y_val = validation_data
-        self.history = []
-
-    def on_epoch_end(self, epoch, logs={}):
-        if epoch % self.interval == 0:
-            y_pred = self.model.predict_generator(generator=self.valid_generator,
-                                                  steps=np.ceil(float(len(self.y_val)) / float(self.batch_size)),
-                                                  workers=1, use_multiprocessing=True,
-                                                  verbose=1)
-            def flatten(y):
-                #print(np.argmax(y,axis = 1).astype(int))
-                #return np.argmax(y, axis=1).astype(int)
-                return np.rint(np.sum(y, axis=1)).astype(int) - 1
-                #return np.rint(np.sum(y,axis=1)).astype(int)
-            
-            score = cohen_kappa_score(flatten(self.y_val),
-                                      flatten(y_pred),
-                                      labels=[0,1,2,3,4],
-                                      weights='quadratic')
-#             print(flatten(self.y_val)[:5])
-#             print(flatten(y_pred)[:5])
-            print("\n epoch: %d - QWK_score: %.6f \n" % (epoch+1, score))
-            self.history.append(score)
-            if score >= max(self.history):
-                print('save checkpoint: ', score)
-                self.model.save(qwk_ckpt_name)
-                log.write(str(log_fold) + ": " + str(score) + "\n")
+# qwk_ckpt_name = './raw_effnet_pretrained_v2.h5'
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 seq = iaa.Sequential(
@@ -237,13 +203,13 @@ def get_cv_data(cv_index):
 for cv_index in range(1,6):
     fold = cv_index
     log_fold = cv_index
-    qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_densenet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
+    # qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_densenet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True)
     train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
-    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                        batch_size=batch, interval=1)
+    # qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                        # batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 #model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
@@ -270,14 +236,14 @@ for cv_index in range(1,6):
     #model.load_weights(save_model_name)
     model.fit_generator(
         train_generator,
-        steps_per_epoch=10,#2560/batch,
+        steps_per_epoch=2560/batch,
         epochs=20,
         verbose = 1,
         #initial_epoch = 14,
-        callbacks = [model_checkpoint, cyclic, qwk],
+        callbacks = [model_checkpoint, cyclic],
         validation_data = val_generator,
-        validation_steps = 10,#1100/batch,
+        validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
     
     model.load_weights(save_model_name)
-    model.save('/nas-homes/joonl4/Blind_weights/raw_densenet_pretrained_binary_smoothen_fold'+str(fold)+'.h5')
+    model.save('/nas-homes/joonl4/blind_weights/raw_densenet_pretrained_binary_smoothen_fold'+str(fold)+'.h5')
