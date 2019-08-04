@@ -31,7 +31,7 @@ gc.collect()
 
 img_target = 256#256
 SIZE = 256
-batch = 16
+batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 train_df = train_df.astype(str)
@@ -222,17 +222,17 @@ for cv_index in range(4,6):
     fold = cv_index
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 
-    train_generator = My_Generator(train_x, train_y, 16, is_train=True)
-    train_mixup = My_Generator(train_x, train_y, 16, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, 16, is_train=False)
-    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                        batch_size=16, interval=1)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
+    # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
+    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
+    # qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+    #                     batch_size=16, interval=1)
     model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
     for layers in model.layers:
         layers.trainable=True
     inputs = model.input
     x = model.output
-    x = Dropout(rate = 0.4) (x)
+    x = Dropout(rate = 0.5) (x)
     x = Dense(512, activation = 'elu') (x)
     x = Dropout(rate = 0.25) (x)
     x = Dense(1, activation = None, name = 'regressor') (x)
@@ -246,7 +246,7 @@ for cv_index in range(4,6):
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_pretrained_effnet_weights_v2_regression_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-    cycle = 2560/batch * 20
+    cycle = 2560/batch * 5
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.01, step_size = cycle)  
     #model.load_weights(save_model_name)
     qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_v2_regression_fold'+str(fold)+'.h5'
@@ -256,7 +256,7 @@ for cv_index in range(4,6):
         steps_per_epoch=2560/batch,
         epochs=5, 
         verbose = 1,
-        callbacks = [model_checkpoint, qwk],
+        callbacks = [model_checkpoint],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
@@ -266,12 +266,13 @@ for cv_index in range(4,6):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=60,
+        epochs=10,
         verbose = 1,
-        callbacks = [cyclic, model_checkpoint, qwk],
+        callbacks = [cyclic, model_checkpoint],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
-    print("#####################FOLD"+str(fold)+"############BEST QWK SCORE IS")
-    print(max(qwk.history))
+    model.save('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_v2_regression_fold'+str(fold)+'.h5')
+    # print("#####################FOLD"+str(fold)+"############BEST QWK SCORE IS")
+    # print(max(qwk.history))
     fold += 1        
