@@ -31,8 +31,8 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 288#256
-SIZE = 288
+img_target = 256#256
+SIZE = 256
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
@@ -262,8 +262,8 @@ for cv_index in range(1,6):
     model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy', 'mse'])
     model.summary()
-    # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
-    model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
+    model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
+    # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v3'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
