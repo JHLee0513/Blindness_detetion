@@ -103,7 +103,7 @@ model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
 # train_generator = My_Generator(train_x, train_y, 8, is_train=False)
 # train_mixup = My_Generator(train_x, train_y, 8, is_train=False, mix=True, augment=True)
 # val_generator = My_Generator(val_x, val_y, 8, is_train=False)
-model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
+# model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
 # warmup
 model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=1e-3, momentum = 0.95, nesterov = True),
              metrics= ['categorical_accuracy'])
