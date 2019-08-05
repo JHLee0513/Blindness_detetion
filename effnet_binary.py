@@ -162,16 +162,14 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(
-            # iaa.Crop(percent=(0.1, 0.2), keep_size = True), # crop 10-20% of images randomly
-            iaa.Affine(
+        sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
             rotate=(-10, 10), # rotate by -45 to +45 degrees
             shear=(-5, 5), # shear by -16 to +16 degrees
             order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
-            mode=ia.ALL, # use any of scikit-image's warping modes (see 2nd image from the top for examples)
+            mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         )),
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
@@ -259,17 +257,17 @@ for cv_index in range(1,6):
     x = Dropout(rate = 0.25) (x)
     x = Dense(5, activation = 'sigmoid') (x)
     model = Model(inputs, x)
-    model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
+    model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 1e-3, momentum = 0.9, nesterov = True),
                 metrics= ['accuracy', 'mse'])
     model.summary()
-    # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
-    model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v3'+str(fold)+'.hdf5'
+    model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
+    # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v5'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
-    cycle = 2560/batch * 30
-    cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.003, step_size = cycle)  
+    cycle = 2560/batch * 5
+    cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.001, step_size = cycle)  
     #model.load_weights(save_model_name)
     model.fit_generator(
         train_generator,
@@ -277,12 +275,12 @@ for cv_index in range(1,6):
         epochs=10,
         verbose = 1,
         #initial_epoch = 14,
-        callbacks = [model_checkpoint, qwk],
+        callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v3"+str(fold)+ ".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v5"+str(fold)+ ".h5")
     '''
     model.load_weights(save_model_name)
     model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),
