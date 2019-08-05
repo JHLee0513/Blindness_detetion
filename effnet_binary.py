@@ -266,13 +266,13 @@ for cv_index in range(1,6):
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
-    cycle = 2560/batch * 5
+    cycle = 2560/batch * 10
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.001, step_size = cycle)  
     #model.load_weights(save_model_name)
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=10,
+        epochs=20,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
