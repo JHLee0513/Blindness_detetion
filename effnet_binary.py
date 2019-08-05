@@ -31,16 +31,16 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 256#256
-SIZE = 256
+img_target = 288#256
+SIZE = 288
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 train_df = train_df.astype(str)
 test_df = test_df.astype(str)
 
-log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
-log_fold = 1
+# log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
+# log_fold = 1
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -260,8 +260,9 @@ for cv_index in range(2,6):
     model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy', 'mse'])
     model.summary()
-    model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5'
+    # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
+    model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v3'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
@@ -271,7 +272,7 @@ for cv_index in range(2,6):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=10,
+        epochs=15,#10,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk],
@@ -279,7 +280,7 @@ for cv_index in range(2,6):
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2"+str(fold)+ ".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v3"+str(fold)+ ".h5")
     '''
     model.load_weights(save_model_name)
     model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),
