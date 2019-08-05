@@ -91,7 +91,7 @@ for layers in model.layers:
 
 inputs = model.input
 x = model.output
-x = Dropout(rate = 0.4) (x)
+x = Dropout(rate = 0.5) (x)
 x = Dense(512, activation = 'elu', name = "fc") (x)
 x = Dropout(rate = 0.25) (x)
 x = Dense(5, activation = 'softmax', name = 'classifier') (x)
@@ -103,7 +103,7 @@ model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
 # train_generator = My_Generator(train_x, train_y, 8, is_train=False)
 # train_mixup = My_Generator(train_x, train_y, 8, is_train=False, mix=True, augment=True)
 # val_generator = My_Generator(val_x, val_y, 8, is_train=False)
-
+model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
 # warmup
 model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=1e-3, momentum = 0.95, nesterov = True),
              metrics= ['categorical_accuracy'])
