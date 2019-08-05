@@ -163,7 +163,7 @@ seq = iaa.Sequential(
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
         sometimes(iaa.Affine(
-            scale={"x": (0.75, 1.25), "y": (0.75, 1.25)}, # scale images to 80-120% of their size, individually per axis
+            scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
             rotate=(-10, 10), # rotate by -45 to +45 degrees
             shear=(-5, 5), # shear by -16 to +16 degrees
@@ -234,7 +234,7 @@ def get_cv_data(cv_index):
     return x_train,y_train,x_valid,y_valid
 
 #for cv_index in range(1,6):
-for cv_index in range(2,6):
+for cv_index in range(1,6):
     fold = cv_index
     log_fold = cv_index
     # qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
