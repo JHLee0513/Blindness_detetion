@@ -272,7 +272,7 @@ for cv_index in range(1,6):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=15,#10,
+        epochs=10,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk],
