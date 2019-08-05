@@ -37,8 +37,8 @@ train_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
 #print(train_df2.head())
 #train_df2 = train_df2.rename(columns={"level": "label"})
 train_df2 = train_df2.drop(["Usage"], axis = 1)
-train_df = train_df.astype(str)
-train_df2 = train_df2.astype(str)
+#train_df = train_df.astype(str)
+#train_df2 = train_df2.astype(str)
 train_df = pd.concat([train_df, train_df2], axis = 0, sort = False)
 train_df.reset_index(drop = True)
 val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
@@ -47,9 +47,11 @@ train_df = train_df.astype(str)
 val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
 val_df = val_df.astype(str)
 train_x = train_df['image']
-train_y = to_categorical(train_df['level'], num_classes=5)
-val_x = val_df['id_code']
-val_y = to_categorical(val_df['diagnosis'], num_classes=5)
+#train_y = to_categorical(train_df['level'], num_classes=5)
+#train_y= train_df['level'].astype(int)
+#val_x = val_df['id_code']
+#val_y = val_df['diagnosis'].astype(int)
+#val_y = to_categorical(val_df['diagnosis'], num_classes=5)
 
 data_gen_args = dict(#featurewise_center=True,
                      #featurewise_std_normalization=True,
@@ -71,7 +73,7 @@ train_generator = image_datagen.flow_from_dataframe(
     y_col = 'level',
     target_size = (img_target,img_target),
     color_mode = 'rgb',
-    class_mode = 'categorical',
+    class_mode = 'other',
     batch_size = batch)
 
 val_generator = val_datagen.flow_from_dataframe(
@@ -81,7 +83,7 @@ val_generator = val_datagen.flow_from_dataframe(
     y_col = 'diagnosis',
     target_size = (img_target,img_target),
     color_mode = 'rgb',
-    class_mode = 'categorical',
+    class_mode = 'other',
     batch_size = batch)
 
 model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights='imagenet', include_top = False, pooling = 'avg')
@@ -94,10 +96,10 @@ x = model.output
 x = Dropout(rate = 0.5) (x)
 x = Dense(512, activation = 'elu', name = "fc") (x)
 x = Dropout(rate = 0.25) (x)
-x = Dense(5, activation = 'softmax', name = 'classifier') (x)
+x = Dense(1, activation = None, name = 'regressor') (x)
 
 model = Model(inputs, x)
-save_model_name = '/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_fulldata.hdf5'
+save_model_name = '/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_fulldata_regresion.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                    mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 # train_generator = My_Generator(train_x, train_y, 8, is_train=False)
@@ -105,8 +107,8 @@ model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
 # val_generator = My_Generator(val_x, val_y, 8, is_train=False)
 model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
 # warmup
-model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=1e-3, momentum = 0.95, nesterov = True),
-             metrics= ['categorical_accuracy'])
+model.compile(loss='mse', optimizer = SGD(lr=1e-3, momentum = 0.95, nesterov = True),
+             metrics= ['accuracy', 'mae'])
 model.fit_generator(
     train_generator,
     steps_per_epoch=88702/batch,
@@ -119,8 +121,8 @@ model.fit_generator(
 cycle = 88702/batch * 10
 cyclic = CyclicLR(mode='exp_range', base_lr = 0.00001, max_lr = 0.001, step_size = cycle)
 model.load_weights(save_model_name)
-model.compile(loss='categorical_crossentropy', optimizer = SGD(lr=0.001, momentum = 0.95, nesterov = True),
-             metrics= [categorical_accuracy])
+model.compile(loss='mse', optimizer = SGD(lr=0.001, momentum = 0.95, nesterov = True),
+             metrics= ['accuracy', 'mae'])
 model.fit_generator(
     train_mixup,
     steps_per_epoch=88702/batch,
