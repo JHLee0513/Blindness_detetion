@@ -105,7 +105,7 @@ class My_Generator(Sequence):
         return batch_images, batch_y
 
 x = train_df['id_code']
-y = train_df['diagnosis']
+y = train_df['diagnosis'].astype(int)
 
 # #binarized labeling
 # for row in y:
@@ -135,10 +135,10 @@ class QWKEvaluation(Callback):
                                                   steps=np.ceil(float(len(self.y_val)) / float(self.batch_size)),
                                                   workers=1, use_multiprocessing=True,
                                                   verbose=1)
-            def flatten(y):
+            def flatten(pred):
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
-                return np.rint(y).astype(int)
+                return np.rint(pred).astype(int)
                 #return np.rint(np.sum(y,axis=1)).astype(int)
             
             score = cohen_kappa_score(flatten(self.y_val),
