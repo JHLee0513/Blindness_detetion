@@ -46,7 +46,9 @@ print("balancing data to meet %d images per class" % balancing_limit)
 balanced_df = new_df
 for i in range(5):
     current_count = len(new_df[(new_df.diagnosis == i)].index)
+    maximum = len(old_df[old_df.level == i].index)
     add = 2000 - current_count
+    add = np.max([add, maximum])
     print("filling %d rows" % add)
     balancer = old_df[(old_df.level == i)]
     balancer.reset_index(drop = True)
