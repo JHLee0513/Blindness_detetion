@@ -264,7 +264,7 @@ for cv_index in range(1,6):
                     kernel_size = (1,1), 
                     padding = 'valid', 
                     activation = 'sigmoid',
-                    , name = 'ATTN4')(attn_layer)
+                    name = 'ATTN4')(attn_layer)
     # fan it out to all of the channels
     up_c2_w = np.ones((1, 1, 1, pt_depth))
     up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
