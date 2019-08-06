@@ -17,7 +17,7 @@ old_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
 old_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
 old_df2 = old_df2.drop(["Usage"], axis = 1)
 old = pd.concat([old_df, old_df2], axis = 0, sort = False)
-old_df.reset_index(drop = True)
+old_df = old_df.reset_index(drop = True)
 
 # class_2_idx = old_df.loc[old_df['level']==2]
 # class_3_idx = old_df.loc[old_df['level']==3]
@@ -51,12 +51,12 @@ for i in range(5):
     add = np.min([add, maximum])
     print("filling %d rows" % add)
     balancer = old_df[(old_df.level == i)]
-    balancer.reset_index(drop = True)
+    balancer = balancer.reset_index(drop = True)
     # print(balancer.head())
     balancer = balancer.loc[:add]
     balancer = balancer.rename(columns={"level": "diagnosis"})
     balanced_df = pd.concat([balanced_df, balancer], axis = 0, sort = False)
-    balanced_df.reset_index(drop = True)
+    balanced_df = balanced_df.reset_index(drop = True)
 
 print("Balanced DATA")
 print(balanced_df['diagnosis'].value_counts())
