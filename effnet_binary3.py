@@ -257,28 +257,29 @@ for cv_index in range(1,6):
     # https://www.kaggle.com/ratan123/aptos-keras-efficientnet-with-attention-baseline/comments#Attention-model
     # here we do an attention mechanism to turn pixels in the GAP on an off
     pt_depth = model.get_output_shape_at(0)[-1]
-    attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN')(Dropout(0.5)(bn_features))
-    attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu')(attn_layer)
-    attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu')(attn_layer)
+    attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
+    attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
+    attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
     attn_layer = Conv2D(1, 
                     kernel_size = (1,1), 
                     padding = 'valid', 
-                    activation = 'sigmoid')(attn_layer)
+                    activation = 'sigmoid',
+                    , name = 'ATTN4')(attn_layer)
     # fan it out to all of the channels
     up_c2_w = np.ones((1, 1, 1, pt_depth))
     up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
-                activation = 'linear', use_bias = False, weights = [up_c2_w])
+                activation = 'linear', use_bias = False, weights = [up_c2_w], , name = 'ATTN5')
     up_c2.trainable = False
     attn_layer = up_c2(attn_layer)
 
     mask_features = multiply([attn_layer, bn_features])
     gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
-    gap_mask = GlobalAveragePooling2D()(attn_layer)
+    gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
     # to account for missing values from the attention model
     gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
     gap_dr = Dropout(0.25)(gap)
-    dr_steps = Dropout(0.25)(Dense(128, activation = 'relu')(gap_dr))
-    out_layer = Dense(5, activation = 'sigmoid')(dr_steps)
+    dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
+    out_layer = Dense(5, activation = 'sigmoid', name = 'ATTN_ordinal')(dr_steps)
     model = Model(inputs, out_layer)
     model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy', 'mse'])
