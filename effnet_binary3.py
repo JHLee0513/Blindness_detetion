@@ -268,7 +268,7 @@ for cv_index in range(1,6):
     # fan it out to all of the channels
     up_c2_w = np.ones((1, 1, 1, pt_depth))
     up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
-                activation = 'linear', use_bias = False, weights = [up_c2_w], , name = 'ATTN5')
+                activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
     up_c2.trainable = False
     attn_layer = up_c2(attn_layer)
 
