@@ -253,7 +253,7 @@ for cv_index in range(1,6):
     x = Dropout(rate = 0.25) (x)
     x = Dense(1, activation = None, name = 'regressor') (x)
     model = Model(inputs, x)
-    model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
+    model.compile(loss='mse', optimizer = SGD(lr = 1e-3, nesterov = True),
                 metrics= ['accuracy', 'mae'])
     model.summary()
     model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
@@ -268,10 +268,10 @@ for cv_index in range(1,6):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=12,
+        epochs=30,
         verbose = 1,
         #initial_epoch = 14,
-        callbacks = [model_checkpoint, qwk],
+        callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
