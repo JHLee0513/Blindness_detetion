@@ -45,7 +45,7 @@ print(old_df['level'].value_counts())
 print("balancing data to meet %d images per class" % balancing_limit)
 balanced_df = new_df
 for i in range(5):
-    current_count = new_df.loc[new_df['diagnosis'] == i]
+    current_count = new_df[(new_df.diagnosis == i)]
     add = 2000 - len(current_count)
     print(add)
     balancer = old_df[(old_df.level == i)]
