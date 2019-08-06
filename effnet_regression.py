@@ -138,7 +138,7 @@ class QWKEvaluation(Callback):
             def flatten(y):
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
-                return np.rint(np.sum(y, axis=1)).astype(int) - 1
+                return np.rint(y).astype(int)
                 #return np.rint(np.sum(y,axis=1)).astype(int)
             
             score = cohen_kappa_score(flatten(self.y_val),
@@ -268,7 +268,7 @@ for cv_index in range(1,6):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=10,
+        epochs=12,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk],
