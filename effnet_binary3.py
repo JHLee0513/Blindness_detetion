@@ -272,7 +272,7 @@ for cv_index in range(1,6):
     attn_layer = up_c2(attn_layer)
 
     mask_features = multiply([attn_layer, bn_features])
-    gap_features = GlobalAveragePooling2D()(mask_features)
+    gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
     gap_mask = GlobalAveragePooling2D()(attn_layer)
     # to account for missing values from the attention model
     gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
