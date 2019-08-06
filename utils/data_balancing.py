@@ -24,8 +24,8 @@ old_df.reset_index(drop = True)
 # class_4_idx = old_df.loc[old_df['level']==4]
 
 new_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
-old_df = old_df.astype(str)
-new_df = new_df.astype(str)
+# old_df = old_df.astype(str)
+# new_df = new_df.astype(str)
 
 print("2019 DATA:")
 # print("    class 0: %d" % len(new_df.loc[new_df['diagnosis'] == 0]))
