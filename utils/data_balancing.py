@@ -52,7 +52,7 @@ for i in range(5):
     balancer = old_df[(old_df.level == i)]
     balancer.reset_index(drop = True)
     # print(balancer.head())
-    balancer = balancer.iloc[:add]
+    balancer = balancer.ix[:add]
     balancer = balancer.rename(columns={"level": "diagnosis"})
     balanced_df = pd.concat([balanced_df, balancer], axis = 0, sort = False)
     balanced_df.reset_index(drop = True)
