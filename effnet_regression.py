@@ -105,7 +105,7 @@ class My_Generator(Sequence):
         return batch_images, batch_y
 
 x = train_df['id_code']
-y = to_categorical(train_df['diagnosis'], num_classes=5)
+y = train_df['diagnosis']
 
 # #binarized labeling
 # for row in y:
