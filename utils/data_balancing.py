@@ -18,12 +18,14 @@ old_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
 old_df2 = old_df2.drop(["Usage"], axis = 1)
 old = pd.concat([old_df, old_df2], axis = 0, sort = False)
 old_df = old_df.reset_index(drop = True)
+old_df['image'] += '.jpeg'
 
 # class_2_idx = old_df.loc[old_df['level']==2]
 # class_3_idx = old_df.loc[old_df['level']==3]
 # class_4_idx = old_df.loc[old_df['level']==4]
 
 new_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
+new_df['id_code'] += '.png'
 # old_df = old_df.astype(str)
 # new_df = new_df.astype(str)
 
