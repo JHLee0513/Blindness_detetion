@@ -54,7 +54,7 @@ for i in range(5):
     balancer = balancer.reset_index(drop = True)
     # print(balancer.head())
     balancer = balancer.loc[:add - 1]
-    balancer = balancer.rename(columns={"level": "diagnosis"})
+    balancer = balancer.rename(columns={"image": "id_code", "level": "diagnosis"})
     balanced_df = pd.concat([balanced_df, balancer], axis = 0, sort = False)
     balanced_df = balanced_df.reset_index(drop = True)
 
