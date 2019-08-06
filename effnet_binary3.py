@@ -255,6 +255,7 @@ for cv_index in range(1,6):
     x = model.output
     # https://www.kaggle.com/ratan123/aptos-keras-efficientnet-with-attention-baseline/comments#Attention-model
     # here we do an attention mechanism to turn pixels in the GAP on an off
+    pt_depth = model.get_output_shape_at(0)[-1]
     attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu')(Dropout(0.5)(x))
     attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu')(attn_layer)
     attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu')(attn_layer)
