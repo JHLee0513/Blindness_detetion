@@ -11,6 +11,7 @@ import gc
 from tqdm import tqdm
 gc.enable()
 gc.collect()
+balancing_limit = 2000
 
 old_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
 old_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
@@ -40,3 +41,16 @@ print("2015 DATA:")
 # print("    class 3: %d" % len(old_df.loc[old_df['level'] == 3]))
 # print("    class 4: %d" % len(old_df.loc[old_df['level'] == 4]))
 print(old_df['level'].value_counts())
+
+print("balancing data to meet %d images per class" % balancing_limit)
+balanced_df = new_df
+for i in range(5):
+    current_count = new_df.loc[new_df['diagnosis'] == i]
+    add = 2000 - len(class_0)
+    balancer = old_df.loc[old_df['level'] == i][:add]
+    balancer = balancer.rename(columns={"level": "diagnosis"})
+    balanced_df = pd.concat([balanced_df, balancer], axis = 0, sort = False)
+    balanced_df.reset_index(drop = True)
+
+print("Balanced DATA")
+print(balanced_df['diagnosis'].value_counts())
