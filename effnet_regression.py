@@ -253,8 +253,8 @@ for cv_index in range(1,6):
     x = Dropout(rate = 0.25) (x)
     x = Dense(1, activation = None, name = 'regressor') (x)
     model = Model(inputs, x)
-    model.compile(loss='mse', optimizer = SGD(lr = 1e-3, nesterov = True),
-                metrics= ['accuracy', 'mae'])
+    model.compile(loss='mae', optimizer = SGD(lr = 1e-3, nesterov = True),
+                metrics= ['accuracy'])
     model.summary()
     model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
     # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
