@@ -253,7 +253,7 @@ for cv_index in range(1,6):
     x = Dropout(rate = 0.25) (x)
     x = Dense(1, activation = None, name = 'regressor') (x)
     model = Model(inputs, x)
-    model.compile(loss='mae', optimizer = SGD(lr = 1e-3, nesterov = True),
+    model.compile(loss='mae', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy'])
     model.summary()
     model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
