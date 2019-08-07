@@ -240,7 +240,7 @@ for cv_index in range(1,6):
     x = Dropout(rate = 0.4) (x)
     x = Dense(1, activation = None, name = 'regressor') (x)
     model = Model(inputs, x)
-    model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
+    model.compile(loss='mse', optimizer = SGD(lr = 1e-3, momentum = 0.9, nesterov = True),
                 metrics= ['accuracy'])
     model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
@@ -265,12 +265,12 @@ for cv_index in range(1,6):
     model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = SGD(lr = 1e-4, nesterov = True),
                 metrics= ['accuracy'])
-    cycle = 2560/batch * 5
+    cycle = 2560/batch * 10
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-5, max_lr = 1e-4, step_size = cycle)  
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=10,
+        epochs=20,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
