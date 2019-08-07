@@ -234,7 +234,7 @@ def get_cv_data(cv_index):
     return x_train,y_train,x_valid,y_valid
 
 #for cv_index in range(1,6):
-for cv_index in range(6,11):
+for cv_index in range(1,6):
     fold = cv_index
     log_fold = cv_index
     # qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
