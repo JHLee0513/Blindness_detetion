@@ -256,7 +256,7 @@ for cv_index in range(1,6):
     x = Dropout(rate = 0.5) (x)
     # x = Dense(512, activation = 'elu') (x)
     # x = Dropout(rate = 0.25) (x)
-    x = Dense(5, activation = 'sigmoid') (x)
+    x = Dense(5, activation = 'sigmoid', name = 'non-FC regressor') (x)
     model = Model(inputs, x)
     model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy', 'mse'])
