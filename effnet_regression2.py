@@ -255,7 +255,7 @@ for cv_index in range(1,6):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=60,
+        epochs=15,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
@@ -263,7 +263,22 @@ for cv_index in range(1,6):
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
+    model.compile(loss='mse', optimizer = SGD(lr = 1e-4, nesterov = True),
+                metrics= ['accuracy'])
+    cycle = 2560/batch * 5
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-5, max_lr = 1e-4, step_size = cycle)  
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=2560/batch,
+        epochs=5,
+        verbose = 1,
+        #initial_epoch = 14,
+        callbacks = [model_checkpoint, qwk, cyclic],
+        validation_data = val_generator,
+        validation_steps = 1100/batch,
+        workers=1, use_multiprocessing=False)
     model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v8"+str(fold)+ ".h5")
+    model.load_weights(save_model_name)
     '''
     model.load_weights(save_model_name)
     model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),
