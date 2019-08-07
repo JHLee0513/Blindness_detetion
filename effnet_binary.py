@@ -282,7 +282,7 @@ for cv_index in range(1,6):
     model.load_weights(save_model_name)
     # Finetune after mixup
     model.fit_generator(
-        train,
+        train_generator,
         steps_per_epoch=2560/batch,
         epochs=10,
         verbose = 1,
