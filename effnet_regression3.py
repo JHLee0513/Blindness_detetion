@@ -203,11 +203,12 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420) 
+kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=666) 
 # spot checking with first epoch
-#420 ~0.93, 0.94
+#420 ~0.93
 #129 ~0.91
 #679 ~0.92
+#666
 #kf.get_n_splits(x)
 train_all = []
 evaluate_all = []
