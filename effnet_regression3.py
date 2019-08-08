@@ -203,7 +203,7 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=1000) 
+kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420) 
 # spot checking with first epoch
 #420 ~0.93
 #129 ~0.91
@@ -258,7 +258,7 @@ for cv_index in range(1,6):
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
     cycle = 2560/batch * 12
-    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-5, max_lr = 1e-4, step_size = cycle)  
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-5, max_lr = 1e-3, step_size = cycle)  
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
