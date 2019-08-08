@@ -204,14 +204,7 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420) 
-# spot checking with first epoch
-#420 ~0.93
-#129 ~0.91
-#679 ~0.92
-#666 ~0.926
-#1 ~0.92
-#1000 ~
+kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420)
 #kf.get_n_splits(x)
 train_all = []
 evaluate_all = []
@@ -249,7 +242,7 @@ for cv_index in range(1,6):
     x = Dropout(rate = 0.4) (x)
     x = Dense(1, activation = None, name = 'regressor') (x)
     model = Model(inputs, x)
-    model.compile(loss='mse', optimizer = Adamax(lr = 1e-3),
+    model.compile(loss='mse', optimizer = SGD(lr = 1e-3, momentum = 0.9, nesterov = True),
                 metrics= ['accuracy'])
     model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
@@ -259,11 +252,11 @@ for cv_index in range(1,6):
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
     cycle = 2560/batch * 12
-    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-5, max_lr = 1e-3, step_size = cycle)  
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-5, max_lr = 1e-4, step_size = cycle)  
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=60,
+        epochs=36,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
