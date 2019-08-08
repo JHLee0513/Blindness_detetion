@@ -262,4 +262,5 @@ for cv_index in range(1,6):
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
+    model.load_weights(save_model_name)
     model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v9"+str(fold)+ ".h5")
