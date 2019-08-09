@@ -268,7 +268,7 @@ for cv_index in range(1):
     log_fold = cv_index
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True)
-    # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
+    train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
@@ -296,7 +296,7 @@ for cv_index in range(1):
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.001, step_size = cycle)  
     #model.load_weights(save_model_name)
     model.fit_generator(
-        train_generator,
+        train_mixup,
         steps_per_epoch=2560/batch,
         epochs=30,
         verbose = 1,
