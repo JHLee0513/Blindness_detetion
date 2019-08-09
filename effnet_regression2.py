@@ -31,6 +31,7 @@ gc.collect()
 
 img_target = 256#256
 SIZE = 256
+IMG_SIZE = 256
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
@@ -38,6 +39,45 @@ train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 train_df = train_df.astype(str)
 # test_df = test_df.astype(str)
+
+#https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
+
+def crop_image1(img,tol=7):
+    # img is image data
+    # tol  is tolerance
+        
+    mask = img>tol
+    return img[np.ix_(mask.any(1),mask.any(0))]
+
+def crop_image_from_gray(img,tol=7):
+    if img.ndim ==2:
+        mask = img>tol
+        return img[np.ix_(mask.any(1),mask.any(0))]
+    elif img.ndim==3:
+        gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        mask = gray_img>tol
+        
+        check_shape = img[:,:,0][np.ix_(mask.any(1),mask.any(0))].shape[0]
+        if (check_shape == 0): # image is too dark so that we crop out everything,
+            return img # return original image
+        else:
+            img1=img[:,:,0][np.ix_(mask.any(1),mask.any(0))]
+            img2=img[:,:,1][np.ix_(mask.any(1),mask.any(0))]
+            img3=img[:,:,2][np.ix_(mask.any(1),mask.any(0))]
+    #         print(img1.shape,img2.shape,img3.shape)
+            img = np.stack([img1,img2,img3],axis=-1)
+    #         print(img.shape)
+        return img
+
+def load_ben_color(image, sigmaX=10):
+    # image = cv2.imread(path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = crop_image_from_gray(image)
+    image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+    image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
+        
+    return image
+
 
 # log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
 # log_fold = 1
@@ -86,7 +126,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            img = load_ben_color(img)
+            # img = cv2.resize(img, (SIZE, SIZE))
             if(self.is_augment):
                 img = seq.augment_image(img)
             batch_images.append(img)
@@ -100,7 +141,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            img = load_ben_color(img)
+            # img = cv2.resize(img, (SIZE, SIZE))
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
         batch_y = np.array(batch_y, np.float32)
@@ -241,7 +283,7 @@ for cv_index in range(1):
     x = Dropout(rate = 0.4) (x)
     x = Dense(1, activation = None, name = 'regressor') (x)
     model = Model(inputs, x)
-    model.compile(loss='mse', optimizer = SGD(lr = 1e-3, momentum = 0.9, nesterov = True),
+    model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy'])
     model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
@@ -271,7 +313,7 @@ for cv_index in range(1):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=20,
+        epochs=40,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
