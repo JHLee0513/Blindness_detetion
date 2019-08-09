@@ -31,6 +31,7 @@ gc.collect()
 
 img_target = 256#256
 SIZE = 256
+IMG_SIZE = 256
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 # train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
@@ -41,6 +42,46 @@ train_df = train_df.astype(str)
 
 # log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
 # log_fold = 1
+
+#https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
+
+def crop_image1(img,tol=7):
+    # img is image data
+    # tol  is tolerance
+        
+    mask = img>tol
+    return img[np.ix_(mask.any(1),mask.any(0))]
+
+def crop_image_from_gray(img,tol=7):
+    if img.ndim ==2:
+        mask = img>tol
+        return img[np.ix_(mask.any(1),mask.any(0))]
+    elif img.ndim==3:
+        gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        mask = gray_img>tol
+        
+        check_shape = img[:,:,0][np.ix_(mask.any(1),mask.any(0))].shape[0]
+        if (check_shape == 0): # image is too dark so that we crop out everything,
+            return img # return original image
+        else:
+            img1=img[:,:,0][np.ix_(mask.any(1),mask.any(0))]
+            img2=img[:,:,1][np.ix_(mask.any(1),mask.any(0))]
+            img3=img[:,:,2][np.ix_(mask.any(1),mask.any(0))]
+    #         print(img1.shape,img2.shape,img3.shape)
+            img = np.stack([img1,img2,img3],axis=-1)
+    #         print(img.shape)
+        return img
+
+def load_ben_color(image, sigmaX=10):
+    # image = cv2.imread(path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = crop_image_from_gray(image)
+    image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+    image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
+        
+    return image
+
+
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -60,7 +101,8 @@ class My_Generator(Sequence):
     def __getitem__(self, idx):
         batch_x = self.image_filenames[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size:(idx + 1) * self.batch_size]
-
+        for item in batch_x:
+            item = load_ben_color(item)
         if(self.is_train):
             return self.train_generate(batch_x, batch_y)
         return self.valid_generate(batch_x, batch_y)
