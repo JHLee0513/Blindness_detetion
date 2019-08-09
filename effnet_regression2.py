@@ -263,18 +263,11 @@ def get_cv_data(cv_index):
     return x_train,y_train,x_valid,y_valid
 
 # for cv_index in range(1,6):
-for cv_index in range(1):
-    fold = cv_index
-    log_fold = cv_index
-    train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
-    train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
-    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                        batch_size=batch, interval=1)
+
+def build_model(freeze = False):
     model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
     for layers in model.layers:
-        layers.trainable=True
+        layers.trainable= not freeze
     inputs = model.input
     x = model.output
     bn_features = BatchNormalization()(x)
@@ -304,15 +297,40 @@ for cv_index in range(1):
     dr_steps = Dropout(0.4)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
     out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
     model = Model(inputs, out_layer)
-    model.compile(loss='mse', optimizer = Nadam(lr = 1e-3),
+    
+    return model
+
+for cv_index in range(1):
+    fold = cv_index
+    log_fold = cv_index
+    train_x, train_y, val_x, val_y = get_cv_data(cv_index)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
+    train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
+    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
+    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                        batch_size=batch, interval=1)
+    model = build_model(freeze = True)
+    model.compile(loss='mse', optimizer = Nadam(lr = 1e-4),
                 metrics= ['accuracy'])
-    model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
     # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v9'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=2560/batch,
+        epochs=5,
+        verbose = 1,
+        callbacks = [model_checkpoint, qwk],
+        validation_data = val_generator,
+        validation_steps = 1100/batch,
+        workers=1, use_multiprocessing=False)
+    model = build_model(freeze = False)
+    model.load_weights(save_model_name)
+    model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
+                    metrics= ['accuracy'])
     cycle = 2560/batch * 15
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.001, step_size = cycle)  
     #model.load_weights(save_model_name)
@@ -334,7 +352,7 @@ for cv_index in range(1):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=40,
+        epochs=20,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
