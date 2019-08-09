@@ -149,7 +149,7 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0, 0.1), keep_size = True)),
+        # sometimes(iaa.size.Crop(percent = (0, 0.1), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -182,9 +182,9 @@ seq = iaa.Sequential(
                     iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
                     iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
                 ]),
-                iaa.Invert(0.01, per_channel=True), # invert color channels
+                # iaa.Invert(0.01, per_channel=True), # invert color channels
                 iaa.Add((-2, 2), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
-                iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
+                # iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
                 # either change the brightness of the whole image (sometimes
                 # per channel) or change the brightness of subareas
                 iaa.OneOf([
