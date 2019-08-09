@@ -245,7 +245,7 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420)
+kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=267)
 #kf.get_n_splits(x)
 train_all = []
 evaluate_all = []
@@ -274,13 +274,13 @@ for cv_index in range(1):
                         batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
-    model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
-    # model = EfficientNetB5(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
+    # model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
     for layers in model.layers:
         layers.trainable=True
     inputs = model.input
     x = model.output
-    x = Dropout(rate = 0.4) (x)
+    x = Dropout(rate = 0.25) (x)
     x = Dense(1, activation = None, name = 'regressor') (x)
     model = Model(inputs, x)
     model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
