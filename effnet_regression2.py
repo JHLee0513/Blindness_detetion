@@ -21,7 +21,7 @@ from keras.losses import binary_crossentropy, categorical_crossentropy
 from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
 from keras.applications.xception import Xception
 from keras.applications.resnet50 import ResNet50
-from efficientnet import EfficientNetB5
+from efficientnet import EfficientNetB4, EfficientNetB5
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
