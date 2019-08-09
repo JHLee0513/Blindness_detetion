@@ -74,7 +74,7 @@ def crop_image_from_gray(img,tol=7):
 
 def load_ben_color(image, sigmaX=10):
     # image = cv2.imread(path)
-    image = cv2.cvtColor(cv2.UMat(image), cv2.COLOR_BGR2RGB)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = crop_image_from_gray(image)
     image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
     image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
@@ -101,8 +101,6 @@ class My_Generator(Sequence):
     def __getitem__(self, idx):
         batch_x = self.image_filenames[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size:(idx + 1) * self.batch_size]
-        for item in batch_x:
-            item = load_ben_color(item)
         if(self.is_train):
             return self.train_generate(batch_x, batch_y)
         return self.valid_generate(batch_x, batch_y)
@@ -128,7 +126,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            img = load_ben_color(img)
+            # img = cv2.resize(img, (SIZE, SIZE))
             if(self.is_augment):
                 img = seq.augment_image(img)
             batch_images.append(img)
@@ -142,7 +141,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            img = load_ben_color(img)
+            # img = cv2.resize(img, (SIZE, SIZE))
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
         batch_y = np.array(batch_y, np.float32)
