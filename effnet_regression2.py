@@ -277,6 +277,7 @@ for cv_index in range(1):
         layers.trainable=True
     inputs = model.input
     x = model.output
+    bn_features = BatchNormalization()(x)
     # x = Dropout(rate = 0.25) (x)
     pt_depth = model.get_output_shape_at(0)[-1]
     attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
