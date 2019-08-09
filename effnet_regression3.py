@@ -242,7 +242,7 @@ for cv_index in range(1,6):
     x = Dropout(rate = 0.4) (x)
     x = Dense(1, activation = None, name = 'regressor') (x)
     model = Model(inputs, x)
-    model.compile(loss='mse', optimizer = SGD(lr = 1e-3, momentum = 0.9, nesterov = True),
+    model.compile(loss='mse', optimizer = SGD(lr = 5e-3, momentum = 0.9, nesterov = True),
                 metrics= ['accuracy'])
     model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
@@ -251,12 +251,12 @@ for cv_index in range(1,6):
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
-    cycle = 2560/batch * 12
-    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
+    cycle = 2560/batch * 4
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 5e-3, step_size = cycle)  
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=36,
+        epochs=4,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
