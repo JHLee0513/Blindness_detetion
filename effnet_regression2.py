@@ -32,7 +32,7 @@ gc.collect()
 img_target = 256#256
 SIZE = 256
 IMG_SIZE = 256
-batch = 8
+batch = 16
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 # train_df['id_code'] += '.png'
@@ -274,8 +274,8 @@ for cv_index in range(1):
                         batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
-#model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
-    model = EfficientNetB5(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
+    model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
+    # model = EfficientNetB5(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
     for layers in model.layers:
         layers.trainable=True
     inputs = model.input
