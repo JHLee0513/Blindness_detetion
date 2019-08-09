@@ -304,9 +304,9 @@ for cv_index in range(1):
     fold = cv_index
     log_fold = cv_index
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
-    train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
+    train_generator = My_Generator(train_x, train_y, 32, is_train=True)
+    # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
+    val_generator = My_Generator(val_x, val_y, 32, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = True)
@@ -320,12 +320,12 @@ for cv_index in range(1):
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
     model.fit_generator(
         train_generator,
-        steps_per_epoch=2560/batch,
+        steps_per_epoch=2560/32,
         epochs=5,
         verbose = 1,
         callbacks = [model_checkpoint, qwk],
         validation_data = val_generator,
-        validation_steps = 1100/batch,
+        validation_steps = 1100/32,
         workers=1, use_multiprocessing=False)
     model = build_model(freeze = False)
     model.load_weights(save_model_name)
@@ -334,6 +334,7 @@ for cv_index in range(1):
     cycle = 2560/batch * 15
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.001, step_size = cycle)  
     #model.load_weights(save_model_name)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
