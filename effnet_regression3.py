@@ -263,6 +263,42 @@ def get_cv_data(cv_index):
     y_valid = np.array(y[evaluate_index])
     return x_train,y_train,x_valid,y_valid
 
+def build_model(freeze = False):
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    for layers in model.layers:
+        layers.trainable= not freeze
+    inputs = model.input
+    x = model.output
+    bn_features = BatchNormalization()(x)
+    # x = Dropout(rate = 0.25) (x)
+    pt_depth = model.get_output_shape_at(0)[-1]
+    attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
+    attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
+    attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
+    attn_layer = Conv2D(1, 
+                    kernel_size = (1,1), 
+                    padding = 'valid', 
+                    activation = 'sigmoid',
+                    name = 'ATTN4')(attn_layer)
+    # fan it out to all of the channels
+    up_c2_w = np.ones((1, 1, 1, pt_depth))
+    up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
+                activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
+    up_c2.trainable = False
+    attn_layer = up_c2(attn_layer)
+
+    mask_features = multiply([attn_layer, bn_features])
+    gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
+    gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
+    # to account for missing values from the attention model
+    gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
+    gap_dr = Dropout(0.4)(gap)
+    dr_steps = Dropout(0.4)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
+    out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
+    model = Model(inputs, out_layer)
+    
+    return model
+
 for cv_index in range(1,6):
 # for cv_index in range(1):
     fold = cv_index
@@ -273,17 +309,7 @@ for cv_index in range(1,6):
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
-#model = ResNet50(include_top = False, weights = 'imagenet', 
-#                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
-#model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
-    model = EfficientNetB5(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
-    for layers in model.layers:
-        layers.trainable=True
-    inputs = model.input
-    x = model.output
-    x = Dropout(rate = 0.4) (x)
-    x = Dense(1, activation = None, name = 'regressor') (x)
-    model = Model(inputs, x)
+    model = build_model()
     model.compile(loss='mse', optimizer = SGD(lr = 1.5e-3, momentum = 0.9, nesterov = True),
                 metrics= ['accuracy'])
     model.summary()
