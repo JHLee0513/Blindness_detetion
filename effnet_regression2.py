@@ -306,7 +306,7 @@ for cv_index in range(1):
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     train_generator = My_Generator(train_x, train_y, 32, is_train=True)
     # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, 32, is_train=False)
+    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = True)
@@ -325,7 +325,7 @@ for cv_index in range(1):
         verbose = 1,
         callbacks = [model_checkpoint, qwk],
         validation_data = val_generator,
-        validation_steps = 1100/32,
+        validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
     model = build_model(freeze = False)
     model.load_weights(save_model_name)
