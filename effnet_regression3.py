@@ -186,7 +186,7 @@ class QWKEvaluation(Callback):
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 
 val_seq = iaa.Sequential([
-    sometimes(iaa.size.Crop(percent = (0.1, 0.25), keep_size = True))
+    sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True))
 ])
 
 seq = iaa.Sequential(
@@ -194,7 +194,7 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0, 0.3), keep_size = True)),
+        sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
