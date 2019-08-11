@@ -140,7 +140,7 @@ class My_Generator(Sequence):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
             img = load_ben_color(img)
             # img = cv2.resize(img, (SIZE, SIZE))
-            img = val_seq.augment_image(img)
+            # img = val_seq.augment_image(img)
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
         batch_y = np.array(batch_y, np.float32)
@@ -249,7 +249,7 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420)
+kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=42)
 #kf.get_n_splits(x)
 train_all = []
 evaluate_all = []
