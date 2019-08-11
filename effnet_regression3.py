@@ -26,9 +26,9 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 256#256
-SIZE = 256
-IMG_SIZE = 256
+img_target = 288#256
+SIZE = 288
+IMG_SIZE = 288
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 # train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
@@ -140,6 +140,7 @@ class My_Generator(Sequence):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
             img = load_ben_color(img)
             # img = cv2.resize(img, (SIZE, SIZE))
+            img = val_seq.augment_image(img)
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
         batch_y = np.array(batch_y, np.float32)
@@ -183,12 +184,17 @@ class QWKEvaluation(Callback):
                 #log.write(str(log_fold) + ": " + str(score) + "\n")
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+
+val_seq = iaa.Sequential([
+    sometimes(iaa.size.Crop(percent = (0.1, 0.25), keep_size = True))
+])
+
 seq = iaa.Sequential(
     [
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0, 0.1), keep_size = True)),
+        sometimes(iaa.size.Crop(percent = (0, 0.3), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
