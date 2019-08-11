@@ -18,10 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
-from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
-from keras.applications.xception import Xception
-from keras.applications.resnet50 import ResNet50
-from efficientnet import EfficientNetB4
+from efficientnet import EfficientNetB4, EfficientNetB5
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
@@ -31,14 +28,57 @@ gc.collect()
 
 img_target = 288#256
 SIZE = 288
+IMG_SIZE = 288
 batch = 8
-train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
+train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
+# train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
+train_df['id_code'] += '.png'
 # test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 train_df = train_df.astype(str)
-# test_df = test_df.astype(str)
+from sklearn.model_selection import train_test_split
 
-# log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
-# log_fold = 1
+train, val = train_test_split(train_df, test_size = 0.2, random_state = 42, stratify = train_df['diagnosis'])
+train = train.reset_index(drop = True)
+val = val.reset_index(drop = True)
+
+#https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
+
+def crop_image1(img,tol=7):
+    # img is image data
+    # tol  is tolerance
+        
+    mask = img>tol
+    return img[np.ix_(mask.any(1),mask.any(0))]
+
+def crop_image_from_gray(img,tol=7):
+    if img.ndim ==2:
+        mask = img>tol
+        return img[np.ix_(mask.any(1),mask.any(0))]
+    elif img.ndim==3:
+        gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        mask = gray_img>tol
+        
+        check_shape = img[:,:,0][np.ix_(mask.any(1),mask.any(0))].shape[0]
+        if (check_shape == 0): # image is too dark so that we crop out everything,
+            return img # return original image
+        else:
+            img1=img[:,:,0][np.ix_(mask.any(1),mask.any(0))]
+            img2=img[:,:,1][np.ix_(mask.any(1),mask.any(0))]
+            img3=img[:,:,2][np.ix_(mask.any(1),mask.any(0))]
+    #         print(img1.shape,img2.shape,img3.shape)
+            img = np.stack([img1,img2,img3],axis=-1)
+    #         print(img.shape)
+        return img
+
+def load_ben_color(image, sigmaX=10):
+    # image = cv2.imread(path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = crop_image_from_gray(image)
+    image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+    image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
+        
+    return image
+
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -58,7 +98,6 @@ class My_Generator(Sequence):
     def __getitem__(self, idx):
         batch_x = self.image_filenames[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size:(idx + 1) * self.batch_size]
-
         if(self.is_train):
             return self.train_generate(batch_x, batch_y)
         return self.valid_generate(batch_x, batch_y)
@@ -84,7 +123,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            img = load_ben_color(img)
+            # img = cv2.resize(img, (SIZE, SIZE))
             if(self.is_augment):
                 img = seq.augment_image(img)
             batch_images.append(img)
@@ -98,27 +138,16 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            img = load_ben_color(img)
+            # img = cv2.resize(img, (SIZE, SIZE))
+            # img = val_seq.augment_image(img)
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
         batch_y = np.array(batch_y, np.float32)
         return batch_images, batch_y
 
-x = train_df['id_code']
-y = train_df['diagnosis'].astype(int)
-
-# #binarized labeling
-# for row in y:
-#     idx = np.argmax(row)
-#     for i in range(idx+1):
-#         row[i] = 0.95 
-# #label smoothening
-#     for j in range(idx+1, 5):
-# #print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
-#         row[j] = 0.05 #label smoothening
-#     #print(row)
-# #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
-# qwk_ckpt_name = './trash.h5'
+# x = train_df['id_code']
+# y = train_df['diagnosis'].astype(int)
 
 class QWKEvaluation(Callback):
     def __init__(self, validation_data=(), batch_size=64, interval=1):
@@ -155,11 +184,17 @@ class QWKEvaluation(Callback):
                 #log.write(str(log_fold) + ": " + str(score) + "\n")
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+
+val_seq = iaa.Sequential([
+    sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True))
+])
+
 seq = iaa.Sequential(
     [
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
+        sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -192,9 +227,9 @@ seq = iaa.Sequential(
                     iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
                     iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
                 ]),
-                iaa.Invert(0.01, per_channel=True), # invert color channels
+                # iaa.Invert(0.01, per_channel=True), # invert color channels
                 iaa.Add((-2, 2), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
-                iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
+                # iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
                 # either change the brightness of the whole image (sometimes
                 # per channel) or change the brightness of subareas
                 iaa.OneOf([
@@ -214,61 +249,68 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420)
-#kf.get_n_splits(x)
-train_all = []
-evaluate_all = []
-for train_idx, test_idx in kf.split(x, train_df['diagnosis']):
-    train_all.append(train_idx)
-    evaluate_all.append(test_idx)
+def build_model(freeze = False):
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    for layers in model.layers:
+        layers.trainable= not freeze
+    inputs = model.input
+    x = model.output
+    bn_features = BatchNormalization()(x)
+    # x = Dropout(rate = 0.25) (x)
+    pt_depth = model.get_output_shape_at(0)[-1]
+    attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
+    attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
+    attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
+    attn_layer = Conv2D(1, 
+                    kernel_size = (1,1), 
+                    padding = 'valid', 
+                    activation = 'sigmoid',
+                    name = 'ATTN4')(attn_layer)
+    # fan it out to all of the channels
+    up_c2_w = np.ones((1, 1, 1, pt_depth))
+    up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
+                activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
+    up_c2.trainable = False
+    attn_layer = up_c2(attn_layer)
 
-def get_cv_data(cv_index):
-    train_index = train_all[cv_index-1]
-    evaluate_index = evaluate_all[cv_index-1]
-    x_train = np.array(train_df.id_code[train_index])
-    y_train = np.array(y[train_index])
-    x_valid = np.array(train_df.id_code[evaluate_index])
-    y_valid = np.array(y[evaluate_index])
-    return x_train,y_train,x_valid,y_valid
+    mask_features = multiply([attn_layer, bn_features])
+    gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
+    gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
+    # to account for missing values from the attention model
+    gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
+    gap_dr = Dropout(0.4)(gap)
+    dr_steps = Dropout(0.4)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
+    out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
+    model = Model(inputs, out_layer)
+    
+    return model
 
-for cv_index in range(1,6):
-    fold = cv_index
-    log_fold = cv_index
-    train_x, train_y, val_x, val_y = get_cv_data(cv_index)
+for cv_index in range(1):
+# for cv_index in range(1):
+    train_x = train['id_code']
+    train_y = train['diagnosis'].astype(int)
+    val_x = val['id_code']
+    val_y = val['diagnosis'].astype(int)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True)
-    # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
-#model = ResNet50(include_top = False, weights = 'imagenet', 
-#                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
-#model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
-    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
-    for layers in model.layers:
-        layers.trainable=True
-    inputs = model.input
-    x = model.output
-    x = Dropout(rate = 0.5) (x)
-    x = Dense(512, activation = 'elu') (x)
-    x = Dropout(rate = 0.25) (x)
-    x = Dense(1, activation = None, name = 'regressor') (x)
-    model = Model(inputs, x)
-    model.compile(loss='mae', optimizer = Adam(lr = 1e-3),
+    model = build_model()
+    model.compile(loss='mse', optimizer = SGD(lr = 1.5e-3, momentum = 0.9, nesterov = True),
                 metrics= ['accuracy'])
     model.summary()
-    model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
-    # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_'+str(fold)+'.hdf5'
+    # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
+    model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v90.hdf5')
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v10'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
-    cycle = 2560/batch * 10
-    cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.001, step_size = cycle)  
-    #model.load_weights(save_model_name)
+    cycle = 2560/batch * 5
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1.5e-3, step_size = cycle)  
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=30,
+        epochs=15,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
@@ -276,22 +318,4 @@ for cv_index in range(1,6):
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v8"+str(fold)+ ".h5")
-    '''
-    model.load_weights(save_model_name)
-    model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),
-                metrics= ['accuracy', 'mse'])
-    model.fit_generator(
-        train_generator,
-        steps_per_epoch=2560/batch,
-        epochs=30,
-        verbose = 1,
-        callbacks = [cyclic, model_checkpoint, qwk],
-        validation_data = val_generator,
-        validation_steps = 1100/batch,
-        workers=1, use_multiprocessing=False)
-    fold += 1
-    #model.load_weights(save_model_name)
-
-    #model.save('raw_effnet_pretrained_v2.h5')
-    '''
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v10"+str(fold)+ ".h5")
