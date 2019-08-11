@@ -302,7 +302,7 @@ def build_model(freeze = False):
     
     return model
 
-for cv_index in range(5,6):
+for cv_index in range(1,6):
 # for cv_index in range(1):
     fold = cv_index
     log_fold = cv_index
