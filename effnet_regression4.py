@@ -70,7 +70,7 @@ def crop_image_from_gray(img,tol=7):
     #         print(img.shape)
         return img
 
-def load_ben_color(image, sigmaX=10):
+def load_ben_color(image, sigmaX=20):
     # image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = crop_image_from_gray(image)
@@ -296,7 +296,7 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model()
-    model.compile(loss='mse', optimizer = SGD(lr = 1.5e-3, momentum = 0.9, nesterov = True),
+    model.compile(loss='mse', optimizer = Adam(lr = 1.5e-3),
                 metrics= ['accuracy'])
     model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
