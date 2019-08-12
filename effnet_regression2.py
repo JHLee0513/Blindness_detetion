@@ -21,7 +21,7 @@ from keras.losses import binary_crossentropy, categorical_crossentropy
 from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
 from keras.applications.xception import Xception
 from keras.applications.resnet50 import ResNet50
-from efficientnet import EfficientNetB4, EfficientNetB5
+from efficientnet import EfficientNetB3, EfficientNetB4, EfficientNetB5
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
@@ -29,10 +29,10 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 288#256
-SIZE = 288
-IMG_SIZE = 288
-batch = 12
+img_target = 300#256
+SIZE = 300
+IMG_SIZE = 300
+batch = 16
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 # train_df['id_code'] += '.png'
@@ -191,6 +191,7 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
+        sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -265,7 +266,7 @@ def get_cv_data(cv_index):
 # for cv_index in range(1,6):
 
 def build_model(freeze = False):
-    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    model = EfficientNetB3(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
     for layers in model.layers:
         layers.trainable= not freeze
     inputs = model.input
