@@ -297,7 +297,7 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model()
-    model.compile(loss='mse', optimizer = Adam(lr = 1.5e-3),
+    model.compile(loss='mse', optimizer = Adam(lr = 1.5e-4),
                 metrics= ['accuracy'])
     model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
@@ -307,7 +307,7 @@ for cv_index in range(1):
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
     cycle = 2560/batch * 5
-    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1.5e-3, step_size = cycle)  
+    cyclic = CyclicLR(mode='exp_range', base_lr = 0.5e-4, max_lr = 1.5e-4, step_size = cycle)  
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
