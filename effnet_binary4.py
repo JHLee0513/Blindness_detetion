@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
-from efficientnet import EfficientNetB4, EfficientNetB5
+from efficientnet import EfficientNetB3, EfficientNetB5
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
@@ -250,7 +250,7 @@ seq = iaa.Sequential(
     random_order=True)
 
 def build_model(freeze = False):
-    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    model = EfficientNetB3(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
     for layers in model.layers:
         layers.trainable= not freeze
     inputs = model.input
