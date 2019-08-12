@@ -289,9 +289,9 @@ for cv_index in range(1):
 # for cv_index in range(1):
     fold = cv_index
     train_x = train['id_code']
-    train_y = train['diagnosis'].astype(int)
+    train_y = to_categorical(train['diagnosis'], num_classes = 5)
     val_x = val['id_code']
-    val_y = val['diagnosis'].astype(int)
+    val_y = to_categorical(val['diagnosis'], num_classes = 5)
     for row in train_y:
         idx = np.argmax(row)
         for i in range(idx+1):
