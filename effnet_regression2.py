@@ -323,7 +323,7 @@ for cv_index in range(1):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/32,
-        epochs=5,
+        epochs=3,
         verbose = 1,
         callbacks = [model_checkpoint, qwk],
         validation_data = val_generator,
@@ -362,23 +362,5 @@ for cv_index in range(1):
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
+    model.load_weights(save_model_name)
     model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v10"+str(fold)+ ".h5")
-    model.load_weights(save_model_name)
-    '''
-    model.load_weights(save_model_name)
-    model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),
-                metrics= ['accuracy', 'mse'])
-    model.fit_generator(
-        train_generator,
-        steps_per_epoch=2560/batch,
-        epochs=30,
-        verbose = 1,
-        callbacks = [cyclic, model_checkpoint, qwk],
-        validation_data = val_generator,
-        validation_steps = 1100/batch,
-        workers=1, use_multiprocessing=False)
-    fold += 1
-    #model.load_weights(save_model_name)
-
-    #model.save('raw_effnet_pretrained_v2.h5')
-    '''
