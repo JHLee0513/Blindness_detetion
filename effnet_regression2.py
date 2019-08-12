@@ -306,7 +306,7 @@ for cv_index in range(1):
     fold = cv_index
     log_fold = cv_index
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, 32, is_train=True)
+    train_generator = My_Generator(train_x, train_y, 32, is_train=True, augment = True)
     # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
