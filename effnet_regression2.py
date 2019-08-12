@@ -61,15 +61,16 @@ def crop_image_from_gray(img,tol=7):
         if (check_shape == 0): # image is too dark so that we crop out everything,
             return img # return original image
         else:
-            img1=img[:,:,0][np.ix_(mask.any(1),mask.any(0))]
-            img2=img[:,:,1][np.ix_(mask.any(1),mask.any(0))]
-            img3=img[:,:,2][np.ix_(mask.any(1),mask.any(0))]
+            # img1=img[:,:,0][np.ix_(mask.any(1),mask.any(0))]
+            # img2=img[:,:,1][np.ix_(mask.any(1),mask.any(0))]
+            # img3=img[:,:,2][np.ix_(mask.any(1),mask.any(0))]
+            img1 = img2 = img3 = img2=img[:,:,1][np.ix_(mask.any(1),mask.any(0))]
     #         print(img1.shape,img2.shape,img3.shape)
             img = np.stack([img1,img2,img3],axis=-1)
     #         print(img.shape)
         return img
 
-def load_ben_color(image, sigmaX=15):
+def load_ben_color(image, sigmaX=10):
     # image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = crop_image_from_gray(image)
@@ -191,7 +192,7 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True)),
+        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -246,7 +247,7 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=42)
+kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420)
 #kf.get_n_splits(x)
 train_all = []
 evaluate_all = []
@@ -311,7 +312,7 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = True)
-    model.compile(loss='mse', optimizer = Nadam(lr = 1e-4),
+    model.compile(loss='mse', optimizer = Adam(lr = 1e-4),
                 metrics= ['accuracy'])
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
     # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
