@@ -30,7 +30,7 @@ img_target = 288#256
 SIZE = 288
 IMG_SIZE = 288
 batch = 8
-train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
+train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
 # test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
@@ -70,7 +70,7 @@ def crop_image_from_gray(img,tol=7):
     #         print(img.shape)
         return img
 
-def load_ben_color(image, sigmaX=20):
+def load_ben_color(image, sigmaX=10):
     # image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = crop_image_from_gray(image)
@@ -280,7 +280,7 @@ def build_model(freeze = False):
     gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
     gap_dr = Dropout(0.4)(gap)
     dr_steps = Dropout(0.4)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
-    out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
+    out_layer = Dense(5, activation = 'sigmoid', name = 'ATTN_ranker') (dr_steps)
     model = Model(inputs, out_layer)
     
     return model
@@ -292,6 +292,15 @@ for cv_index in range(1):
     train_y = train['diagnosis'].astype(int)
     val_x = val['id_code']
     val_y = val['diagnosis'].astype(int)
+    for row in train_y:
+        idx = np.argmax(row)
+        for i in range(idx+1):
+            row[i] = 0.95 
+    #label smoothening
+        for j in range(idx+1, 5):
+    #print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
+            row[j] = 0.05 #label smoothening
+        #print(row)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
@@ -301,7 +310,7 @@ for cv_index in range(1):
                 metrics= ['accuracy'])
     model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
-    model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v90.hdf5')
+    # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v90.hdf5')
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v10'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
@@ -311,7 +320,7 @@ for cv_index in range(1):
     model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=15,
+        epochs=30,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
