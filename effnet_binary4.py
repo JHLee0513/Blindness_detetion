@@ -306,7 +306,7 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model()
-    model.compile(loss='mse', optimizer = Adam(lr = 1.5e-4),
+    model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1.5e-4),
                 metrics= ['accuracy'])
     model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
