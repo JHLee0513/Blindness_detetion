@@ -401,7 +401,7 @@ for cv_index in range(1):
     train_y = train['diagnosis'].astype(int)
     val_x = val['id_code']
     val_y = val['diagnosis'].astype(int)
-    train_generator = My_Generator(train_x, train_y, 64, is_train=True, augment=True, mix_up = True)
+    train_generator = My_Generator(train_x, train_y, 64, is_train=True, augment=True, mix = True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
@@ -424,7 +424,7 @@ for cv_index in range(1):
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
 
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True, mix_up = True)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True, mix = True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
