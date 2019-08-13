@@ -41,7 +41,7 @@ train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
 # train = train_df.reset_index(drop = True)
 
-train, val = train_test_split(train_df, test_size = 0.2, random_state = 42, stratify = train_df['diagnosis'])
+train, val = train_test_split(train_df, test_size = 0.2, random_state = 420, stratify = train_df['diagnosis'])
 
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
@@ -252,39 +252,39 @@ seq = iaa.Sequential(
 
 
 def build_model(freeze = False):
-    model = EfficientNetB3(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
     for layers in model.layers:
         layers.trainable= not freeze
     inputs = model.input
     x = model.output
-    x = GlobalAveragePooling2D()(x)
-    # bn_features = BatchNormalization()(x)
-    # # x = Dropout(rate = 0.25) (x)
-    # pt_depth = model.get_output_shape_at(0)[-1]
-    # attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
-    # attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
-    # attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
-    # attn_layer = Conv2D(1, 
-    #                 kernel_size = (1,1), 
-    #                 padding = 'valid', 
-    #                 activation = 'sigmoid',
-    #                 name = 'ATTN4')(attn_layer)
-    # # fan it out to all of the channels
-    # up_c2_w = np.ones((1, 1, 1, pt_depth))
-    # up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
-    #             activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
-    # up_c2.trainable = False
-    # attn_layer = up_c2(attn_layer)
+    # x = GlobalAveragePooling2D()(x)
+    bn_features = BatchNormalization()(x)
+    # x = Dropout(rate = 0.25) (x)
+    pt_depth = model.get_output_shape_at(0)[-1]
+    attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
+    attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
+    attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
+    attn_layer = Conv2D(1, 
+                    kernel_size = (1,1), 
+                    padding = 'valid', 
+                    activation = 'sigmoid',
+                    name = 'ATTN4')(attn_layer)
+    # fan it out to all of the channels
+    up_c2_w = np.ones((1, 1, 1, pt_depth))
+    up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
+                activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
+    up_c2.trainable = False
+    attn_layer = up_c2(attn_layer)
 
-    # mask_features = multiply([attn_layer, bn_features])
-    # gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
-    # gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
-    # # to account for missing values from the attention model
-    # gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
-    # gap_dr = Dropout(0.25)(gap)
-    # dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
-    # out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
-    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.5)(x))
+    mask_features = multiply([attn_layer, bn_features])
+    gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
+    gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
+    # to account for missing values from the attention model
+    gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
+    gap_dr = Dropout(0.25)(gap)
+    dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
+    out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
+    # out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.5)(x))
     model = Model(inputs, out_layer)
     return model
 
@@ -401,31 +401,46 @@ for cv_index in range(1):
     train_y = train['diagnosis'].astype(int)
     val_x = val['id_code']
     val_y = val['diagnosis'].astype(int)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
-    # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
+    train_generator = My_Generator(train_x, train_y, 64, is_train=True, augment=True, mix_up = True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
-    model = build_model()
-    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=16, samples_per_epoch=2560/batch, epochs=60)
-
+    model = build_model(freeze = True)
+    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=64, samples_per_epoch=2560/batch, epochs=60)
     model.compile(loss='mse', optimizer = aw,
                 metrics= ['accuracy'])
     model.summary()
-    # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
-    # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v100.hdf5')
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v10'+str(fold)+'.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v100.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-    #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
-    cycle = len(train_y)/batch * 15
-    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1.5e-3, step_size = cycle)  
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=75,
+        epochs=3,
         verbose = 1,
         callbacks = [model_checkpoint, qwk],
+        validation_data = val_generator,
+        validation_steps = len(val_y)/batch,
+        workers=1, use_multiprocessing=False)
+    model.load_weights(save_model_name)
+
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True, mix_up = True)
+    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
+    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                        batch_size=batch, interval=1)
+    model = build_model(freeze = False)
+    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=2560/batch, epochs=60)
+    model.load_weights(save_model_name)
+    model.compile(loss='mse', optimizer = aw,
+                metrics= ['accuracy'])
+    cycle = len(train_y)/batch * 15
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=len(train_y)/batch,
+        epochs=60,
+        verbose = 1,
+        callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
