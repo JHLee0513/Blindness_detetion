@@ -257,34 +257,34 @@ def build_model(freeze = False):
         layers.trainable= not freeze
     inputs = model.input
     x = model.output
-    # x = GlobalAveragePooling2D()(x)
-    bn_features = BatchNormalization()(x)
-    # x = Dropout(rate = 0.25) (x)
-    pt_depth = model.get_output_shape_at(0)[-1]
-    attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
-    attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
-    attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
-    attn_layer = Conv2D(1, 
-                    kernel_size = (1,1), 
-                    padding = 'valid', 
-                    activation = 'sigmoid',
-                    name = 'ATTN4')(attn_layer)
-    # fan it out to all of the channels
-    up_c2_w = np.ones((1, 1, 1, pt_depth))
-    up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
-                activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
-    up_c2.trainable = False
-    attn_layer = up_c2(attn_layer)
+    x = GlobalAveragePooling2D()(x)
+    # bn_features = BatchNormalization()(x)
+    x = Dropout(rate = 0.25) (x)
+    # pt_depth = model.get_output_shape_at(0)[-1]
+    # attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
+    # attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
+    # attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
+    # attn_layer = Conv2D(1, 
+    #                 kernel_size = (1,1), 
+    #                 padding = 'valid', 
+    #                 activation = 'sigmoid',
+    #                 name = 'ATTN4')(attn_layer)
+    # # fan it out to all of the channels
+    # up_c2_w = np.ones((1, 1, 1, pt_depth))
+    # up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
+    #             activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
+    # up_c2.trainable = False
+    # attn_layer = up_c2(attn_layer)
 
-    mask_features = multiply([attn_layer, bn_features])
-    gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
-    gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
-    # to account for missing values from the attention model
-    gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
-    gap_dr = Dropout(0.25)(gap)
-    dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
-    out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
-    # out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.5)(x))
+    # mask_features = multiply([attn_layer, bn_features])
+    # gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
+    # gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
+    # # to account for missing values from the attention model
+    # gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
+    # gap_dr = Dropout(0.25)(gap)
+    # dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
+    # out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
+    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.5)(x))
     model = Model(inputs, out_layer)
     return model
 
