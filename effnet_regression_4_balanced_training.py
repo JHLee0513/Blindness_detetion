@@ -26,10 +26,10 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 288
-SIZE = 288
-IMG_SIZE = 288
-batch = 8
+img_target = 380
+SIZE = 380
+IMG_SIZE = 380
+batch = 4
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df = train_df.astype(str)
 # df_2019 = train_df[train_df['id_code'].str.contains(".png")]
