@@ -26,9 +26,9 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 300
-SIZE = 300
-IMG_SIZE = 300
+img_target = 288
+SIZE = 288
+IMG_SIZE = 288
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 train_df = train_df.astype(str)
@@ -140,7 +140,7 @@ class My_Generator(Sequence):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
             img = load_ben_color(img)
             # img = cv2.resize(img, (SIZE, SIZE))
-            img = val_seq.augment_image(img)
+            # img = val_seq.augment_image(img)
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
         batch_y = np.array(batch_y, np.float32)
@@ -192,7 +192,7 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        # sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True)),
+        sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -254,34 +254,34 @@ def build_model(freeze = False):
         layers.trainable= not freeze
     inputs = model.input
     x = model.output
-    bn_features = BatchNormalization()(x)
-    # x = Dropout(rate = 0.25) (x)
-    pt_depth = model.get_output_shape_at(0)[-1]
-    attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
-    attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
-    attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
-    attn_layer = Conv2D(1, 
-                    kernel_size = (1,1), 
-                    padding = 'valid', 
-                    activation = 'sigmoid',
-                    name = 'ATTN4')(attn_layer)
-    # fan it out to all of the channels
-    up_c2_w = np.ones((1, 1, 1, pt_depth))
-    up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
-                activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
-    up_c2.trainable = False
-    attn_layer = up_c2(attn_layer)
+    # bn_features = BatchNormalization()(x)
+    # # x = Dropout(rate = 0.25) (x)
+    # pt_depth = model.get_output_shape_at(0)[-1]
+    # attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
+    # attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
+    # attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
+    # attn_layer = Conv2D(1, 
+    #                 kernel_size = (1,1), 
+    #                 padding = 'valid', 
+    #                 activation = 'sigmoid',
+    #                 name = 'ATTN4')(attn_layer)
+    # # fan it out to all of the channels
+    # up_c2_w = np.ones((1, 1, 1, pt_depth))
+    # up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
+    #             activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
+    # up_c2.trainable = False
+    # attn_layer = up_c2(attn_layer)
 
-    mask_features = multiply([attn_layer, bn_features])
-    gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
-    gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
-    # to account for missing values from the attention model
-    gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
-    gap_dr = Dropout(0.25)(gap)
-    dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
-    out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
+    # mask_features = multiply([attn_layer, bn_features])
+    # gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
+    # gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
+    # # to account for missing values from the attention model
+    # gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
+    # gap_dr = Dropout(0.25)(gap)
+    # dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
+    # out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
+    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.5)(x))
     model = Model(inputs, out_layer)
-    
     return model
 
 
@@ -414,17 +414,16 @@ for cv_index in range(1):
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
-    cycle = 2560/batch * 5
+    cycle = len(train_y)/batch * 15
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1.5e-3, step_size = cycle)  
     model.fit_generator(
         train_generator,
-        steps_per_epoch=2560/batch,
-        epochs=60,
+        steps_per_epoch=len(train_y)/batch,
+        epochs=75,
         verbose = 1,
-        #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk],
         validation_data = val_generator,
-        validation_steps = 1100/batch,
+        validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v10"+str(fold)+ ".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v100.h5")
