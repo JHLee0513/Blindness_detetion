@@ -254,6 +254,7 @@ def build_model(freeze = False):
         layers.trainable= not freeze
     inputs = model.input
     x = model.output
+    x = GlobalAveragePooling2D()(x)
     # bn_features = BatchNormalization()(x)
     # # x = Dropout(rate = 0.25) (x)
     # pt_depth = model.get_output_shape_at(0)[-1]
