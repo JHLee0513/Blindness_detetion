@@ -36,10 +36,10 @@ df_2019 = train_df[train_df['id_code'].str.contains(".png")]
 
 train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 42, stratify = df_2019['diagnosis'])
 train_2019 = train_2019.reset_index(drop = True)
-val_2019 = val_2019.reset_index(drop = True)
+val = val_2019.reset_index(drop = True)
 
 train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
-train_df = train_df.reset_index(drop = True)
+train = train_df.reset_index(drop = True)
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
@@ -287,7 +287,10 @@ def build_model(freeze = False):
 # for cv_index in range(1,6):
 for cv_index in range(1):
     fold = cv_index
-    train_x, train_y, val_x, val_y = get_cv_data(cv_index)
+    train_x = train['id_code']
+    train_y = train['diagnosis']
+    val_x = val['id_code']
+    val_y = val['diagnosis']
     train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
     # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
