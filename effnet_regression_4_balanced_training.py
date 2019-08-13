@@ -34,7 +34,7 @@ train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 train_df = train_df.astype(str)
 df_2019 = train_df[train_df['id_code'].str.contains(".png")]
 
-train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 42, stratify = df_2019['diagnosis'])
+train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 420, stratify = df_2019['diagnosis'])
 train_2019 = train_2019.reset_index(drop = True)
 val = val_2019.reset_index(drop = True)
 
@@ -192,7 +192,7 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True)),
+        # sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -277,8 +277,8 @@ def build_model(freeze = False):
     gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
     # to account for missing values from the attention model
     gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
-    gap_dr = Dropout(0.4)(gap)
-    dr_steps = Dropout(0.4)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
+    gap_dr = Dropout(0.25)(gap)
+    dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
     out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
     model = Model(inputs, out_layer)
     
