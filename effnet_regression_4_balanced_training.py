@@ -31,15 +31,18 @@ SIZE = 288
 IMG_SIZE = 288
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
-train_df = train_df.astype(str)
-df_2019 = train_df[train_df['id_code'].str.contains(".png")]
+# train_df = train_df.astype(str)
+# df_2019 = train_df[train_df['id_code'].str.contains(".png")]
 
-train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 420, stratify = df_2019['diagnosis'])
-train_2019 = train_2019.reset_index(drop = True)
-val = val_2019.reset_index(drop = True)
+# train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 420, stratify = df_2019['diagnosis'])
+# train_2019 = train_2019.reset_index(drop = True)
+# val = val_2019.reset_index(drop = True)
 
-train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
-train = train_df.reset_index(drop = True)
+# train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
+# train = train_df.reset_index(drop = True)
+
+train, val = train_test_split(train_df, test_size = 0.2, random_state = 42, stratify = train_df['diagnosis'])
+
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
