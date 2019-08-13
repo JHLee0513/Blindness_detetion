@@ -32,7 +32,7 @@ IMG_SIZE = 300
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 train_df = train_df.astype(str)
-df_2019 = train_df[(train_df['id_code'][-3] == '.png')]
+df_2019 = train_df.loc[(train_df['id_code'][-3:] == 'png')]
 
 train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 42, stratify = df_2019['diagnosis'])
 train_2019 = train.reset_index(drop = True)
