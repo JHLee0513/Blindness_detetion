@@ -404,8 +404,8 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = False)
-    aw = AdamW(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
-    model.compile(loss='mse', optimizer = aw,
+    # aw = AdamW(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
+    model.compile(loss='mse', optimizer = Adam(lr = 1e-4),
                 metrics= ['accuracy'])
     model.summary()
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5'
@@ -427,9 +427,9 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = False)
-    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=75)
+    # aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=75)
     model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = aw,
+    model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 15
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
