@@ -26,9 +26,9 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 300
-SIZE = 300
-IMG_SIZE = 300
+img_target = 380
+SIZE = 380
+IMG_SIZE = 380
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
@@ -168,6 +168,7 @@ class QWKEvaluation(Callback):
             def flatten(pred):
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
+
                 return np.rint(pred).astype(int)
                 #return np.rint(np.sum(y,axis=1)).astype(int)
             
@@ -195,13 +196,13 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0.05, 0.15), keep_size = True)),
+        sometimes(iaa.size.Crop(percent = (0.05, 0.1), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
             rotate=(-10, 10), # rotate by -45 to +45 degrees
-            shear=(-5, 5), # shear by -16 to +16 degrees
-            order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
+            # shear=(-5, 5), # shear by -16 to +16 degrees
+            # order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         ))
@@ -252,14 +253,13 @@ seq = iaa.Sequential(
 
 
 def build_model(freeze = False):
-    model = EfficientNetB3(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
     for layers in model.layers:
         layers.trainable= not freeze
     inputs = model.input
     x = model.output
     x = GlobalAveragePooling2D()(x)
     # bn_features = BatchNormalization()(x)
-    x = Dropout(rate = 0.3) (x)
     # pt_depth = model.get_output_shape_at(0)[-1]
     # attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
     # attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
@@ -275,7 +275,6 @@ def build_model(freeze = False):
     #             activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
     # up_c2.trainable = False
     # attn_layer = up_c2(attn_layer)
-
     # mask_features = multiply([attn_layer, bn_features])
     # gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
     # gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
@@ -284,7 +283,7 @@ def build_model(freeze = False):
     # gap_dr = Dropout(0.25)(gap)
     # dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
     # out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
-    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.5)(x))
+    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
     model = Model(inputs, out_layer)
     return model
 
@@ -400,12 +399,12 @@ for cv_index in range(1):
     train_y = train['diagnosis'].astype(int)
     val_x = val['id_code']
     val_y = val['diagnosis'].astype(int)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = False)
-    aw = AdamW(lr=1e-5, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
+    aw = AdamW(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
     model.compile(loss='mse', optimizer = aw,
                 metrics= ['accuracy'])
     model.summary()
