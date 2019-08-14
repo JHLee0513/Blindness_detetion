@@ -31,6 +31,7 @@ SIZE = 300
 IMG_SIZE = 300
 batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
+train_df['id_code'] += '.png'
 # train_df = train_df.astype(str)
 # df_2019 = train_df[train_df['id_code'].str.contains(".png")]
 
