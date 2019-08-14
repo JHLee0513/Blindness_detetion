@@ -18,10 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
-from keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
-from keras.applications.xception import Xception
-from keras.applications.resnet50 import ResNet50
-from efficientnet import EfficientNetB3, EfficientNetB4, EfficientNetB5
+from efficientnet import EfficientNetB4, EfficientNetB3
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
@@ -32,19 +29,26 @@ gc.collect()
 img_target = 300
 SIZE = 300
 IMG_SIZE = 300
-batch = 16
-# train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
+batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
-train_df['id_code'] += '.png'
-# test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 # train_df = train_df.astype(str)
-# test_df = test_df.astype(str)
+# df_2019 = train_df[train_df['id_code'].str.contains(".png")]
+
+# train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 420, stratify = df_2019['diagnosis'])
+# train_2019 = train_2019.reset_index(drop = True)
+# val = val_2019.reset_index(drop = True)
+
+# train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
+# train = train_df.reset_index(drop = True)
+
+train, val = train_test_split(train_df, test_size = 0.2, random_state = 420, stratify = train_df['diagnosis'])
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
 def crop_image1(img,tol=7):
     # img is image data
     # tol  is tolerance
+        
     mask = img>tol
     return img[np.ix_(mask.any(1),mask.any(0))]
 
@@ -63,7 +67,6 @@ def crop_image_from_gray(img,tol=7):
             img1=img[:,:,0][np.ix_(mask.any(1),mask.any(0))]
             img2=img[:,:,1][np.ix_(mask.any(1),mask.any(0))]
             img3=img[:,:,2][np.ix_(mask.any(1),mask.any(0))]
-            # img1 = img2 = img3 = img2=img[:,:,1][np.ix_(mask.any(1),mask.any(0))]
     #         print(img1.shape,img2.shape,img3.shape)
             img = np.stack([img1,img2,img3],axis=-1)
     #         print(img.shape)
@@ -78,9 +81,6 @@ def load_ben_color(image, sigmaX=10):
         
     return image
 
-
-# log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
-# log_fold = 1
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -100,7 +100,6 @@ class My_Generator(Sequence):
     def __getitem__(self, idx):
         batch_x = self.image_filenames[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size:(idx + 1) * self.batch_size]
-
         if(self.is_train):
             return self.train_generate(batch_x, batch_y)
         return self.valid_generate(batch_x, batch_y)
@@ -143,13 +142,12 @@ class My_Generator(Sequence):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
             img = load_ben_color(img)
             # img = cv2.resize(img, (SIZE, SIZE))
+            # img = val_seq.augment_image(img)
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
         batch_y = np.array(batch_y, np.float32)
         return batch_images, batch_y
 
-x = train_df['id_code']
-y = train_df['diagnosis'].astype(int)
 
 class QWKEvaluation(Callback):
     def __init__(self, validation_data=(), batch_size=64, interval=1):
@@ -186,12 +184,17 @@ class QWKEvaluation(Callback):
                 #log.write(str(log_fold) + ": " + str(score) + "\n")
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+
+val_seq = iaa.Sequential([
+    sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True))
+])
+
 seq = iaa.Sequential(
     [
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
+        sometimes(iaa.size.Crop(percent = (0.05, 0.1), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -200,70 +203,52 @@ seq = iaa.Sequential(
             order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
-        )),
+        ))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
-        iaa.SomeOf((0, 5),
-            [
-                sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
-                iaa.OneOf([
-                    iaa.GaussianBlur((0, 1.0)), # blur images with a sigma between 0 and 3.0
-                    iaa.AverageBlur(k=(3, 5)), # blur image using local means with kernel sizes between 2 and 7
-                    iaa.MedianBlur(k=(3, 5)), # blur image using local medians with kernel sizes between 2 and 7
-                ]),
-                # iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)), # sharpen images
-                # iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)), # emboss images
-                # # search either for all edges or for directed edges,
-                # # blend the result with the original image using a blobby mask
-                # iaa.SimplexNoiseAlpha(iaa.OneOf([
-                #     iaa.EdgeDetect(alpha=(0.5, 1.0)),
-                #     iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
-                # ])),
-                # iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
-                # iaa.OneOf([
-                #     iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
-                #     iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
-                # ]),
-                # iaa.Invert(0.01, per_channel=True), # invert color channels
-                # iaa.Add((-2, 2), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
-                # iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
-                # either change the brightness of the whole image (sometimes
-                # per channel) or change the brightness of subareas
-                # iaa.OneOf([
-                #     iaa.Multiply((0.9, 1.1), per_channel=0.5),
-                #     iaa.FrequencyNoiseAlpha(
-                #         exponent=(-1, 0),
-                #         first=iaa.Multiply((0.9, 1.1), per_channel=True),
-                #         second=iaa.ContrastNormalization((0.9, 1.1))
-                #     )
-                # ]),
-                # sometimes(iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)), # move pixels locally around (with random strengths)
-                # sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05))), # sometimes move parts of the image around
-                # sometimes(iaa.PerspectiveTransform(scale=(0.01, 0.1)))
-            ],
-            random_order=True
-        )
+        # iaa.SomeOf((0, 5),
+        #     [
+        #         sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
+        #         iaa.OneOf([
+        #             iaa.GaussianBlur((0, 1.0)), # blur images with a sigma between 0 and 3.0
+        #             iaa.AverageBlur(k=(3, 5)), # blur image using local means with kernel sizes between 2 and 7
+        #             iaa.MedianBlur(k=(3, 5)), # blur image using local medians with kernel sizes between 2 and 7
+        #         ]),
+        #         iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)), # sharpen images
+        #         iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)), # emboss images
+        #         # search either for all edges or for directed edges,
+        #         # blend the result with the original image using a blobby mask
+        #         iaa.SimplexNoiseAlpha(iaa.OneOf([
+        #             iaa.EdgeDetect(alpha=(0.5, 1.0)),
+        #             iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
+        #         ])),
+        #         iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
+        #         iaa.OneOf([
+        #             iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
+        #             iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
+        #         ]),
+        #         # iaa.Invert(0.01, per_channel=True), # invert color channels
+        #         iaa.Add((-2, 2), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
+        #         # iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
+        #         # either change the brightness of the whole image (sometimes
+        #         # per channel) or change the brightness of subareas
+        #         iaa.OneOf([
+        #             iaa.Multiply((0.9, 1.1), per_channel=0.5),
+        #             iaa.FrequencyNoiseAlpha(
+        #                 exponent=(-1, 0),
+        #                 first=iaa.Multiply((0.9, 1.1), per_channel=True),
+        #                 second=iaa.ContrastNormalization((0.9, 1.1))
+        #             )
+        #         ]),
+        #         sometimes(iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)), # move pixels locally around (with random strengths)
+        #         sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05))), # sometimes move parts of the image around
+        #         sometimes(iaa.PerspectiveTransform(scale=(0.01, 0.1)))
+        #     ],
+        #     random_order=True
+        # )
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420)
-#kf.get_n_splits(x)
-train_all = []
-evaluate_all = []
-for train_idx, test_idx in kf.split(x, train_df['diagnosis']):
-    train_all.append(train_idx)
-    evaluate_all.append(test_idx)
-
-def get_cv_data(cv_index):
-    train_index = train_all[cv_index-1]
-    evaluate_index = evaluate_all[cv_index-1]
-    x_train = np.array(train_df.id_code[train_index])
-    y_train = np.array(y[train_index])
-    x_valid = np.array(train_df.id_code[evaluate_index])
-    y_valid = np.array(y[evaluate_index])
-    return x_train,y_train,x_valid,y_valid
-
-# for cv_index in range(1,6):
 
 def build_model(freeze = False):
     model = EfficientNetB3(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
@@ -271,6 +256,7 @@ def build_model(freeze = False):
         layers.trainable= not freeze
     inputs = model.input
     x = model.output
+    x = GlobalAveragePooling2D()(x)
     # bn_features = BatchNormalization()(x)
     x = Dropout(rate = 0.25) (x)
     # pt_depth = model.get_output_shape_at(0)[-1]
@@ -294,72 +280,168 @@ def build_model(freeze = False):
     # gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
     # # to account for missing values from the attention model
     # gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
-    # gap_dr = Dropout(0.4)(gap)
-    # dr_steps = Dropout(0.4)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
+    # gap_dr = Dropout(0.25)(gap)
+    # dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
     # out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
-    out_layer = Dense(1, activation = None, name = 'normal)regressor') (x)
+    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.5)(x))
     model = Model(inputs, out_layer)
     return model
 
+
+from keras import backend as K
+from keras.utils.generic_utils import serialize_keras_object
+from keras.utils.generic_utils import deserialize_keras_object
+from keras.legacy import interfaces
+
+from keras.optimizers import Optimizer
+
+class AdamW(Optimizer):
+    """AdamW optimizer.
+    Default parameters follow those provided in the original paper.
+    # Arguments
+        lr: float >= 0. Learning rate.
+        beta_1: float, 0 < beta < 1. Generally close to 1.
+        beta_2: float, 0 < beta < 1. Generally close to 1.
+        epsilon: float >= 0. Fuzz factor. If `None`, defaults to `K.epsilon()`.
+        decay: float >= 0. Learning rate decay over each update.
+        weight_decay: float >= 0. Weight decay (L2 penalty) (default: 0.025).
+        batch_size: integer >= 1. Batch size used during training.
+        samples_per_epoch: integer >= 1. Number of samples (training points) per epoch.
+        epochs: integer >= 1. Total number of epochs for training. 
+    # References
+        - [Adam - A Method for Stochastic Optimization](http://arxiv.org/abs/1412.6980v8)
+        - [Fixing Weight Decay Regularization in Adam](https://arxiv.org/abs/1711.05101)
+    """
+
+    def __init__(self, lr=0.001, beta_1=0.9, beta_2=0.999,
+                 epsilon=None, decay=0., weight_decay=0.025, 
+                 batch_size=1, samples_per_epoch=1, 
+                 epochs=1, **kwargs):
+        super(AdamW, self).__init__(**kwargs)
+        with K.name_scope(self.__class__.__name__):
+            self.iterations = K.variable(0, dtype='int64', name='iterations')
+            self.lr = K.variable(lr, name='lr')
+            self.beta_1 = K.variable(beta_1, name='beta_1')
+            self.beta_2 = K.variable(beta_2, name='beta_2')
+            self.decay = K.variable(decay, name='decay')
+            self.weight_decay = K.variable(weight_decay, name='weight_decay')
+            self.batch_size = K.variable(batch_size, name='batch_size')
+            self.samples_per_epoch = K.variable(samples_per_epoch, name='samples_per_epoch')
+            self.epochs = K.variable(epochs, name='epochs')
+        if epsilon is None:
+            epsilon = K.epsilon()
+        self.epsilon = epsilon
+        self.initial_decay = decay
+
+    @interfaces.legacy_get_updates_support
+    def get_updates(self, loss, params):
+        grads = self.get_gradients(loss, params)
+        self.updates = [K.update_add(self.iterations, 1)]
+
+        lr = self.lr
+        if self.initial_decay > 0:
+            lr = lr * (1. / (1. + self.decay * K.cast(self.iterations,
+                                                      K.dtype(self.decay))))
+
+        t = K.cast(self.iterations, K.floatx()) + 1
+        '''Bias corrections according to the Adam paper
+        '''
+        lr_t = lr * (K.sqrt(1. - K.pow(self.beta_2, t)) /
+                     (1. - K.pow(self.beta_1, t)))
+
+        ms = [K.zeros(K.int_shape(p), dtype=K.dtype(p)) for p in params]
+        vs = [K.zeros(K.int_shape(p), dtype=K.dtype(p)) for p in params]
+        self.weights = [self.iterations] + ms + vs
+
+        for p, g, m, v in zip(params, grads, ms, vs):
+            m_t = (self.beta_1 * m) + (1. - self.beta_1) * g
+            v_t = (self.beta_2 * v) + (1. - self.beta_2) * K.square(g)
+            
+            '''Schedule multiplier eta_t = 1 for simple AdamW
+            According to the AdamW paper, eta_t can be fixed, decay, or 
+            also be used for warm restarts (AdamWR to come). 
+            '''
+            eta_t = 1.
+            p_t = p - eta_t*(lr_t * m_t / (K.sqrt(v_t) + self.epsilon))
+            if self.weight_decay != 0:
+                '''Normalized weight decay according to the AdamW paper
+                '''
+                w_d = self.weight_decay*K.sqrt(self.batch_size/(self.samples_per_epoch*self.epochs))
+                p_t = p_t - eta_t*(w_d*p) 
+
+            self.updates.append(K.update(m, m_t))
+            self.updates.append(K.update(v, v_t))
+            new_p = p_t
+
+            # Apply constraints.
+            if getattr(p, 'constraint', None) is not None:
+                new_p = p.constraint(new_p)
+
+            self.updates.append(K.update(p, new_p))
+        return self.updates
+
+    def get_config(self):
+        config = {'lr': float(K.get_value(self.lr)),
+                  'beta_1': float(K.get_value(self.beta_1)),
+                  'beta_2': float(K.get_value(self.beta_2)),
+                  'decay': float(K.get_value(self.decay)),
+                  'weight_decay': float(K.get_value(self.weight_decay)),
+                  'batch_size': int(K.get_value(self.batch_size)),
+                  'samples_per_epoch': int(K.get_value(self.samples_per_epoch)),
+                  'epochs': int(K.get_value(self.epochs)),
+                  'epsilon': self.epsilon}
+        base_config = super(AdamW, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
+# for cv_index in range(1,6):
 for cv_index in range(1):
     fold = cv_index
-    log_fold = cv_index
-    train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, 32, is_train=True, augment = True)
-    # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
+    train_x = train['id_code']
+    train_y = train['diagnosis'].astype(int)
+    val_x = val['id_code']
+    val_y = val['diagnosis'].astype(int)
+    train_generator = My_Generator(train_x, train_y, 64, is_train=True, augment=True, mix = True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = True)
-    model.compile(loss='mse', optimizer = Adam(lr = 1e-4),
+    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=64, samples_per_epoch=2560/batch, epochs=60)
+    model.compile(loss='mse', optimizer = aw,
                 metrics= ['accuracy'])
-    # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5", by_name = True)
-    # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v10'+str(fold)+'.hdf5'
+    model.summary()
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-    #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
     model.fit_generator(
         train_generator,
-        steps_per_epoch=2560/32,
+        steps_per_epoch=len(train_y)/batch,
         epochs=3,
         verbose = 1,
         callbacks = [model_checkpoint, qwk],
         validation_data = val_generator,
-        validation_steps = 1100/batch,
+        validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
+    model.load_weights(save_model_name)
+
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
+    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
+    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                        batch_size=batch, interval=1)
     model = build_model(freeze = False)
+    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=2560/batch, epochs=60)
     model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
-                    metrics= ['accuracy'])
-    cycle = 2560/batch * 15
-    cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.001, step_size = cycle)  
-    #model.load_weights(save_model_name)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
-    model.fit_generator(
-        train_generator,
-        steps_per_epoch=2560/batch,
-        epochs=30,
-        verbose = 1,
-        #initial_epoch = 14,
-        callbacks = [model_checkpoint, qwk, cyclic],
-        validation_data = val_generator,
-        validation_steps = 1100/batch,
-        workers=1, use_multiprocessing=False)
-    model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = SGD(lr = 1e-4, nesterov = True),
+    model.compile(loss='mse', optimizer = aw,
                 metrics= ['accuracy'])
-    cycle = 2560/batch * 10
-    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-5, max_lr = 1e-4, step_size = cycle)  
+    cycle = len(train_y)/batch * 15
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
     model.fit_generator(
         train_generator,
-        steps_per_epoch=2560/batch,
-        epochs=20,
+        steps_per_epoch=len(train_y)/batch,
+        epochs=60,
         verbose = 1,
-        #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
-        validation_steps = 1100/batch,
+        validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v10"+str(fold)+ ".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.h5")
