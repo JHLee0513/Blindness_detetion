@@ -76,7 +76,7 @@ def crop_image_from_gray(img,tol=7):
 def load_ben_color(image, sigmaX=10):
     # image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = crop_image_from_gray(image)
+    # image = crop_image_from_gray(image)
     image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
     image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
         
@@ -195,7 +195,7 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        # sometimes(iaa.size.Crop(percent = (0.05, 0.1), keep_size = True)),
+        sometimes(iaa.size.Crop(percent = (0.05, 0.15), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -404,8 +404,8 @@ for cv_index in range(1):
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
-    model = build_model(freeze = True)
-    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=64, samples_per_epoch=2560/batch, epochs=60)
+    model = build_model(freeze = False)
+    aw = AdamW(lr=1e-5, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
     model.compile(loss='mse', optimizer = aw,
                 metrics= ['accuracy'])
     model.summary()
@@ -428,7 +428,7 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = False)
-    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=2560/batch, epochs=60)
+    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=75)
     model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = aw,
                 metrics= ['accuracy'])
