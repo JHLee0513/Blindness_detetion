@@ -42,7 +42,7 @@ train_df['id_code'] += '.png'
 # train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
 # train = train_df.reset_index(drop = True)
 
-train, val = train_test_split(train_df, test_size = 0.2, random_state = 420, stratify = train_df['diagnosis'])
+train, val = train_test_split(train_df, test_size = 0.2, random_state = None, stratify = train_df['diagnosis'])
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
@@ -195,7 +195,7 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0.05, 0.1), keep_size = True)),
+        # sometimes(iaa.size.Crop(percent = (0.05, 0.1), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -259,7 +259,7 @@ def build_model(freeze = False):
     x = model.output
     x = GlobalAveragePooling2D()(x)
     # bn_features = BatchNormalization()(x)
-    x = Dropout(rate = 0.25) (x)
+    x = Dropout(rate = 0.3) (x)
     # pt_depth = model.get_output_shape_at(0)[-1]
     # attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
     # attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
@@ -287,7 +287,6 @@ def build_model(freeze = False):
     out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.5)(x))
     model = Model(inputs, out_layer)
     return model
-
 
 from keras import backend as K
 from keras.utils.generic_utils import serialize_keras_object
@@ -401,7 +400,7 @@ for cv_index in range(1):
     train_y = train['diagnosis'].astype(int)
     val_x = val['id_code']
     val_y = val['diagnosis'].astype(int)
-    train_generator = My_Generator(train_x, train_y, 64, is_train=True, augment=True, mix = True)
+    train_generator = My_Generator(train_x, train_y, 64, is_train=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
@@ -438,7 +437,7 @@ for cv_index in range(1):
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=60,
+        epochs=75,
         verbose = 1,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
