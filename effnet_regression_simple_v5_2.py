@@ -208,7 +208,7 @@ seq = iaa.Sequential(
         ))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
-        iaa.SomeOf((0, 5),
+        ,iaa.SomeOf((0, 5),
             [
                 sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
                 iaa.OneOf([
