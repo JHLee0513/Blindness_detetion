@@ -208,46 +208,46 @@ seq = iaa.Sequential(
         ))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
-        # iaa.SomeOf((0, 5),
-        #     [
-        #         sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
-        #         iaa.OneOf([
-        #             iaa.GaussianBlur((0, 1.0)), # blur images with a sigma between 0 and 3.0
-        #             iaa.AverageBlur(k=(3, 5)), # blur image using local means with kernel sizes between 2 and 7
-        #             iaa.MedianBlur(k=(3, 5)), # blur image using local medians with kernel sizes between 2 and 7
-        #         ]),
-        #         iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)), # sharpen images
-        #         iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)), # emboss images
-        #         # search either for all edges or for directed edges,
-        #         # blend the result with the original image using a blobby mask
-        #         iaa.SimplexNoiseAlpha(iaa.OneOf([
-        #             iaa.EdgeDetect(alpha=(0.5, 1.0)),
-        #             iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
-        #         ])),
-        #         iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
-        #         iaa.OneOf([
-        #             iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
-        #             iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
-        #         ]),
-        #         # iaa.Invert(0.01, per_channel=True), # invert color channels
-        #         iaa.Add((-2, 2), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
-        #         # iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
-        #         # either change the brightness of the whole image (sometimes
-        #         # per channel) or change the brightness of subareas
-        #         iaa.OneOf([
-        #             iaa.Multiply((0.9, 1.1), per_channel=0.5),
-        #             iaa.FrequencyNoiseAlpha(
-        #                 exponent=(-1, 0),
-        #                 first=iaa.Multiply((0.9, 1.1), per_channel=True),
-        #                 second=iaa.ContrastNormalization((0.9, 1.1))
-        #             )
-        #         ]),
-        #         sometimes(iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)), # move pixels locally around (with random strengths)
-        #         sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05))), # sometimes move parts of the image around
-        #         sometimes(iaa.PerspectiveTransform(scale=(0.01, 0.1)))
-        #     ],
-        #     random_order=True
-        # )
+        iaa.SomeOf((0, 5),
+            [
+                sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
+                iaa.OneOf([
+                    iaa.GaussianBlur((0, 1.0)), # blur images with a sigma between 0 and 3.0
+                    iaa.AverageBlur(k=(3, 5)), # blur image using local means with kernel sizes between 2 and 7
+                    iaa.MedianBlur(k=(3, 5)), # blur image using local medians with kernel sizes between 2 and 7
+                ]),
+                iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)), # sharpen images
+                iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)), # emboss images
+                # search either for all edges or for directed edges,
+                # blend the result with the original image using a blobby mask
+                # iaa.SimplexNoiseAlpha(iaa.OneOf([
+                #     iaa.EdgeDetect(alpha=(0.5, 1.0)),
+                #     iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
+                # ])),
+                iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
+                # iaa.OneOf([
+                #     iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
+                #     iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
+                # ]),
+                # iaa.Invert(0.01, per_channel=True), # invert color channels
+                # iaa.Add((-2, 2), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
+                # iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
+                # either change the brightness of the whole image (sometimes
+                # per channel) or change the brightness of subareas
+                # iaa.OneOf([
+                #     iaa.Multiply((0.9, 1.1), per_channel=0.5),
+                #     iaa.FrequencyNoiseAlpha(
+                #         exponent=(-1, 0),
+                #         first=iaa.Multiply((0.9, 1.1), per_channel=True),
+                #         second=iaa.ContrastNormalization((0.9, 1.1))
+                #     )
+                # ]),
+                # # sometimes(iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)), # move pixels locally around (with random strengths)
+                # # sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05))), # sometimes move parts of the image around
+                # sometimes(iaa.PerspectiveTransform(scale=(0.01, 0.1)))
+            ],
+            random_order=True
+        )
     ],
     random_order=True)
 
@@ -404,7 +404,7 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = False)
-    model = load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5")
+    model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5")
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v111.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
