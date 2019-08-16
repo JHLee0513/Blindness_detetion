@@ -42,7 +42,7 @@ train_df['id_code'] += '.png'
 # train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
 # train = train_df.reset_index(drop = True)
 
-train, val = train_test_split(train_df, test_size = 0.2, random_state = None, stratify = train_df['diagnosis'])
+train, val = train_test_split(train_df, test_size = 0.2, random_state = 69420, stratify = train_df['diagnosis'])
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
