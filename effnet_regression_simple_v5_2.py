@@ -19,6 +19,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
 from efficientnet import EfficientNetB4, EfficientNetB3
+from utils.snapshot import SnapshotCallbackBuilder
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
@@ -404,23 +405,30 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
     model = build_model(freeze = False)
+    M = 5 # number of snapshots
+    nb_epoch = T = 20 # number of epochs
+    alpha_zero = 1e-3 # initial learning rate
+    model_prefix = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_snapshot'
+
+    snapshot = SnapshotCallbackBuilder(T, M, alpha_zero) 
+
     model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5")
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v111.hdf5'
+    # save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v111.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
     model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
-    cycle = len(train_y)/batch * 5
+    cycle = len(train_y)/batch * 4
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=5,
+        epochs=20,
         verbose = 1,
-        callbacks = [model_checkpoint, qwk, cyclic],
+        callbacks = [qwk].append(snapshot.get_callbacks(model_prefix=model_prefix)),
         validation_data = val_generator,
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
-    model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v111.h5")
+    # model.load_weights(save_model_name)
+    # model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v111.h5")
