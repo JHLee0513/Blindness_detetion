@@ -411,12 +411,12 @@ for cv_index in range(1):
 
     model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
-    cycle = len(train_y)/batch * 10
+    cycle = len(train_y)/batch * 5
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=10,
+        epochs=5,
         verbose = 1,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
