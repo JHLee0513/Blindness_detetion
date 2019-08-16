@@ -225,7 +225,7 @@ seq = iaa.Sequential(
                 #     iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
                 # ])),
                 iaa.GammaContrast((0.75, 1.25),
-                iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
+                iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5) # add gaussian noise to images
                 # iaa.OneOf([
                 #     iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
                 #     iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
@@ -360,17 +360,17 @@ class AdamW(Optimizer):
             '''Schedule multiplier eta_t = 1 for simple AdamW
             According to the AdamW paper, eta_t can be fixed, decay, or 
             also be used for warm restarts (AdamWR to come). 
-            '''
-            eta_t = 1.
-            p_t = p - eta_t*(lr_t * m_t / (K.sqrt(v_t) + self.epsilon))
-            if self.weight_decay != 0:
-                '''Normalized weight decay according to the AdamW paper
-                '''
-                w_d = self.weight_decay*K.sqrt(self.batch_size/(self.samples_per_epoch*self.epochs))
-                p_t = p_t - eta_t*(w_d*p) 
-
-            self.updates.append(K.update(m, m_t))
-            self.updates.append(K.update(v, v_t))
+            '''iaa.GammaContrast((0.5, 1.5)
+            eta_t = 1.iaa.GammaContrast((0.5, 1.5)
+            p_t = p - eta_t*(lr_t * m_t / iaa.GammaContrast((0.5, 1.5)(K.sqrt(v_t) + self.epsilon))
+            if self.weight_decay != 0:iaa.GammaContrast((0.5, 1.5)
+                '''Normalized weight decayiaa.GammaContrast((0.5, 1.5) according to the AdamW paper
+                '''iaa.GammaContrast((0.5, 1.5)
+                w_d = self.weight_decay*K.iaa.GammaContrast((0.5, 1.5)sqrt(self.batch_size/(self.samples_per_epoch*self.epochs))
+                p_t = p_t - eta_t*(w_d*p) iaa.GammaContrast((0.5, 1.5)
+iaa.GammaContrast((0.5, 1.5)
+            self.updates.append(K.update(miaa.GammaContrast((0.5, 1.5), m_t))
+            self.updates.append(K.update(viaa.GammaContrast((0.5, 1.5), v_t))
             new_p = p_t
 
             # Apply constraints.
