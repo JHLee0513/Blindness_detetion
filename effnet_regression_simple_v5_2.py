@@ -406,9 +406,7 @@ model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regres
 save_model_name = '/nas-homes/joonl4/blind_weights/snap.hdf5'
 
 for cv_index in range(5):
-    if cv_index == 0:
-        model.load_weights(save_model_name)
-    else:
+    if cv_index != 0:
         model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
