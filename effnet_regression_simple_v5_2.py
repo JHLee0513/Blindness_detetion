@@ -205,10 +205,10 @@ seq = iaa.Sequential(
             # order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
-        ))
+        )),
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
-        ,iaa.SomeOf((0, 5),
+        iaa.SomeOf((0, 5),
             [
                 sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
                 iaa.OneOf([
@@ -224,8 +224,8 @@ seq = iaa.Sequential(
                 #     iaa.EdgeDetect(alpha=(0.5, 1.0)),
                 #     iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
                 # ])),
-                iaa.GammaContrast((0.75, 1.25),
-                iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5) # add gaussian noise to images
+                iaa.GammaContrast((0.75, 1.25)),
+                iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
                 # iaa.OneOf([
                 #     iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
                 #     iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
