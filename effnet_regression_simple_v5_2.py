@@ -393,7 +393,6 @@ class AdamW(Optimizer):
         return dict(list(base_config.items()) + list(config.items()))
 
 # for cv_index in range(1,6):
-fold = cv_index
 train_x = train['id_code']
 train_y = train['diagnosis'].astype(int)
 val_x = val['id_code']
