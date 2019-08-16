@@ -404,8 +404,7 @@ qwk = QWKEvaluation(validation_data=(val_generator, val_y),
 model = build_model(freeze = False)
 model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5")
 save_model_name = '/nas-homes/joonl4/blind_weights/snap.hdf5'
-model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
-                                mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
+
 for cv_index in range(5):
     if cv_index == 0:
         model.load_weights(save_model_name)
@@ -414,7 +413,9 @@ for cv_index in range(5):
     model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 4
-    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
+    model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
+                                mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
