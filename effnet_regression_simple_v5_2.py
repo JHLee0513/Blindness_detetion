@@ -407,7 +407,7 @@ save_model_name = '/nas-homes/joonl4/blind_weights/snap.hdf5'
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                 mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 for cv_index in range(5):
-    if cv_index != 0:
+    if cv_index == 0:
         model.load_weights(save_model_name)
     else:
         model.load_weights(save_model_name)
