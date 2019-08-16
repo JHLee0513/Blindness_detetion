@@ -30,7 +30,7 @@ class SnapshotModelCheckpoint(Callback):
     def on_epoch_end(self, epoch, logs={}):
         if epoch != 0 and (epoch + 1) % self.check == 0:
             filepath = self.fn_prefix + "-%d.h5" % ((epoch + 1) // self.check)
-            self.model.save_weights(filepath, overwrite=True)
+            self.model.save(filepath, overwrite=True)
             #print("Saved snapshot at weights/%s_%d.h5" % (self.fn_prefix, epoch))
 
 
@@ -69,7 +69,7 @@ class SnapshotCallbackBuilder:
         # if not os.path.exists('weights/'):
         #     os.makedirs('weights/')
 
-        callback_list = [callbacks.ModelCheckpoint("%s-Best.h5" % model_prefix, monitor="val_acc",
+        callback_list = [callbacks.ModelCheckpoint("%s-Best.h5" % model_prefix, monitor="val_loss", mode='min',
                                                     save_best_only=True, save_weights_only=True),
                          callbacks.LearningRateScheduler(schedule=self._cosine_anneal_schedule),
                          SnapshotModelCheckpoint(self.T, self.M, fn_prefix='%s' % model_prefix)]
