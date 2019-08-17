@@ -29,7 +29,7 @@ gc.collect()
 img_target = 380
 SIZE = 380
 IMG_SIZE = 380
-batch = 8
+batch = 16
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
 # train_df = train_df.astype(str)
@@ -224,7 +224,7 @@ seq = iaa.Sequential(
                 #     iaa.EdgeDetect(alpha=(0.5, 1.0)),
                 #     iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
                 # ])),
-                iaa.GammaContrast((0.5, 1.5)),
+                iaa.GammaContrast((0.75, 1.25)),
                 iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
                 # iaa.OneOf([
                 #     iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
@@ -409,20 +409,20 @@ save_model_name = '/nas-homes/joonl4/blind_weights/snap.hdf5'
 for cv_index in range(5):
     if cv_index != 0:
         model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = Adam(lr=1e-3),
+    model.compile(loss='mse', optimizer = SGD(lr=1e-3),
                 metrics= ['accuracy'])
-    cycle = len(train_y)/batch * 4
+    cycle = len(train_y)/batch * 8
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                 mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=4,
+        epochs=8,
         verbose = 1,
         callbacks = [qwk, cyclic, model_checkpoint],
         validation_data = val_generator,
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v12_snap"+str(cv_index+1)+".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v13_snap"+str(cv_index+1)+".h5")
