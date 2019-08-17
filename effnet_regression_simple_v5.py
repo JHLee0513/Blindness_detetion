@@ -29,7 +29,7 @@ gc.collect()
 img_target = 380
 SIZE = 380
 IMG_SIZE = 380
-batch = 8
+batch = 12
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df['id_code'] += '.png'
 # train_df = train_df.astype(str)
@@ -196,11 +196,11 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0.05, 0.1), keep_size = True)),
+        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
-            rotate=(-10, 10), # rotate by -45 to +45 degrees
+            rotate=(-80, 80), # rotate by -360 to +360 degrees
             # shear=(-5, 5), # shear by -16 to +16 degrees
             # order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
@@ -408,7 +408,7 @@ for cv_index in range(1):
     model.compile(loss='mse', optimizer = Adam(lr = 1e-4),
                 metrics= ['accuracy'])
     model.summary()
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_2.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     model.fit_generator(
@@ -436,11 +436,24 @@ for cv_index in range(1):
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=75,
+        epochs=50,
         verbose = 1,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.h5")
+    model.compile(loss='mse', optimizer = SGD(lr=1e-3),
+                metrics= ['accuracy'])
+    cycle = len(train_y)/batch * 10
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=len(train_y)/batch,
+        epochs=20,
+        verbose = 1,
+        callbacks = [model_checkpoint, qwk, cyclic],
+        validation_data = val_generator,
+        validation_steps = len(val_y)/batch,
+        workers=1, use_multiprocessing=False)
+    # model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.h5")
