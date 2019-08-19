@@ -29,7 +29,7 @@ gc.collect()
 img_target = 456
 SIZE = 456
 IMG_SIZE = 456
-batch = 8
+batch = 4
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df['id_code'] += '.png'
 # train_df = train_df.astype(str)
