@@ -265,7 +265,7 @@ train_x = train['id_code']
 train_y = train['diagnosis'].astype(int)
 val_x = val['id_code']
 val_y = val['diagnosis'].astype(int)
-train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
+train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
 val_generator = My_Generator(val_x, val_y, batch, is_train=False)
 qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                     batch_size=batch, interval=1)
@@ -276,16 +276,16 @@ save_model_name = '/nas-homes/joonl4/blind_weights/snap_trash.hdf5'
 for cv_index in range(3):
     if cv_index != 0:
         model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = SGD(lr=1e-3),
+    model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
-    cycle = len(train_y)/batch * 10
+    cycle = len(train_y)/batch * 4
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                 mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=10,
+        epochs=4,
         verbose = 1,
         callbacks = [qwk, cyclic, model_checkpoint],
         validation_data = val_generator,
