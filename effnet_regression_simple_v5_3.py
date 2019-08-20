@@ -190,7 +190,7 @@ seq = iaa.Sequential(
         sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
-            translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
+            # translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
             rotate=(-80, 80), # rotate by -360 to +360 degrees
             # shear=(-5, 5), # shear by -16 to +16 degrees
             # order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
@@ -199,23 +199,23 @@ seq = iaa.Sequential(
         ))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
-        ,iaa.SomeOf((0, 5),
-            [
-                sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
-                iaa.OneOf([
-                    iaa.GaussianBlur((0, 1.0)), # blur images with a sigma between 0 and 3.0
-                    iaa.AverageBlur(k=(3, 5)), # blur image using local means with kernel sizes between 2 and 7
-                    iaa.MedianBlur(k=(3, 5)), # blur image using local medians with kernel sizes between 2 and 7
-                ]),
-                iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)), # sharpen images
-                iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)), # emboss images
+        # ,iaa.SomeOf((0, 5),
+        #     [
+        #         sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
+        #         iaa.OneOf([
+        #             iaa.GaussianBlur((0, 1.0)), # blur images with a sigma between 0 and 3.0
+        #             iaa.AverageBlur(k=(3, 5)), # blur image using local means with kernel sizes between 2 and 7
+        #             iaa.MedianBlur(k=(3, 5)), # blur image using local medians with kernel sizes between 2 and 7
+        #         ]),
+        #         iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)), # sharpen images
+        #         iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)), # emboss images
                 # search either for all edges or for directed edges,
                 # blend the result with the original image using a blobby mask
                 # iaa.SimplexNoiseAlpha(iaa.OneOf([
                 #     iaa.EdgeDetect(alpha=(0.5, 1.0)),
                 #     iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
                 # ])),
-                iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
+                # iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
                 # iaa.OneOf([
                 #     iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
                 #     iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
@@ -259,7 +259,7 @@ train_x = train['id_code']
 train_y = train['diagnosis'].astype(int)
 val_x = val['id_code']
 val_y = val['diagnosis'].astype(int)
-train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
+train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
 val_generator = My_Generator(val_x, val_y, batch, is_train=False)
 qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                     batch_size=batch, interval=1)
