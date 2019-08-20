@@ -272,14 +272,14 @@ for cv_index in range(3):
         model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
-    cycle = len(train_y)/batch * 6
+    cycle = len(train_y)/batch * 8
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                 mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=6,
+        epochs=8,
         verbose = 1,
         callbacks = [qwk, cyclic, model_checkpoint],
         validation_data = val_generator,
