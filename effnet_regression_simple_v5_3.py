@@ -236,9 +236,9 @@ seq = iaa.Sequential(
                 # # sometimes(iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)), # move pixels locally around (with random strengths)
                 # # sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05))), # sometimes move parts of the image around
                 # sometimes(iaa.PerspectiveTransform(scale=(0.01, 0.1)))
-            ],
-            random_order=True
-        )
+        #     ],
+        #     random_order=True
+        # )
     ],
     random_order=True)
 
