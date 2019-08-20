@@ -201,8 +201,8 @@ seq = iaa.Sequential(
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         )),
-        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
-        sometimes(iaa.contrast.LinearContrast(alpha = (0.9, 1.1)))
+        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True))#,
+        # sometimes(iaa.contrast.LinearContrast(alpha = (0.9, 1.1)))
     ],
     random_order=True)
 
@@ -250,4 +250,4 @@ for cv_index in range(1):
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v14_3.h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v14_4.h5")
