@@ -259,7 +259,7 @@ train_x = train['id_code']
 train_y = train['diagnosis'].astype(int)
 val_x = val['id_code']
 val_y = val['diagnosis'].astype(int)
-train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
+train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
 val_generator = My_Generator(val_x, val_y, batch, is_train=False)
 qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                     batch_size=batch, interval=1)
@@ -267,7 +267,7 @@ model = build_model(freeze = False)
 model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_2.hdf5")
 save_model_name = '/nas-homes/joonl4/blind_weights/snapp.hdf5'
 
-model.compile(loss='mse', optimizer = SGD(lr=1e-3),
+model.compile(loss='mse', optimizer = Adam(lr=1e-3),
             metrics= ['accuracy'])
 cycle = len(train_y)/batch * 5
 cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
@@ -287,6 +287,11 @@ img_target = 512
 SIZE = 512
 IMG_SIZE = 512
 batch = 4
+
+train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
+val_generator = My_Generator(val_x, val_y, batch, is_train=False)
+qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                    batch_size=batch, interval=1)
 
 model = build_model(freeze = True)
 model.load_weights(save_model_name)
