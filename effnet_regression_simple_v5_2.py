@@ -169,7 +169,7 @@ class QWKEvaluation(Callback):
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
 
-                return np.rint(pred).astype(int)
+                return np.clip(np.rint(pred), 0, 4).astype(int)
                 #return np.rint(np.sum(y,axis=1)).astype(int)
             
             score = cohen_kappa_score(flatten(self.y_val),
@@ -201,8 +201,8 @@ seq = iaa.Sequential(
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         )),
-        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True))#,
-        # sometimes(iaa.contrast.LinearContrast(alpha = (0.9, 1.1)))
+        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
+        sometimes(iaa.contrast.LinearContrast(alpha = (0.75, 1.25)))
     ],
     random_order=True)
 
