@@ -23,6 +23,7 @@ import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
 import gc
+from keras_radam import RAdam
 gc.enable()
 gc.collect()
 
@@ -234,7 +235,7 @@ save_model_name = '/nas-homes/joonl4/blind_weights/snap_trash_2.hdf5'
 for cv_index in range(1):
     if cv_index != 0:
         model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = SGD(lr=1e-3, nesterov = True),
+    model.compile(loss='mse', optimizer = RAdam(lr=1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 10
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
