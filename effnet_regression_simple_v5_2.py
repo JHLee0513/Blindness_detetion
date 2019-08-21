@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
-from efficientnet import EfficientNetB4, EfficientNetB3
+from efficientnet import EfficientNetB5, EfficientNetB3
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
@@ -26,10 +26,10 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 380
-SIZE = 380
-IMG_SIZE = 380
-batch = 8
+img_target = 456
+SIZE = 456
+IMG_SIZE = 456
+batch = 4
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
 # train_df = train_df.astype(str)
@@ -208,7 +208,7 @@ seq = iaa.Sequential(
 
 
 def build_model(freeze = False):
-    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    model = EfficientNetB5(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
     for layers in model.layers:
         layers.trainable= not freeze
     inputs = model.input
@@ -228,7 +228,7 @@ val_generator = My_Generator(val_x, val_y, batch, is_train=False)
 qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                     batch_size=batch, interval=1)
 model = build_model(freeze = False)
-model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_2.hdf5")
+model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v201.hdf5")
 save_model_name = '/nas-homes/joonl4/blind_weights/snap_trash.hdf5'
 
 for cv_index in range(3):
@@ -236,18 +236,18 @@ for cv_index in range(3):
         model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
-    cycle = len(train_y)/batch * 4
+    cycle = len(train_y)/batch * 5
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                 mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=4,
+        epochs=5,
         verbose = 1,
         callbacks = [qwk, cyclic, model_checkpoint],
         validation_data = val_generator,
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v15_snap"+str(cv_index+1)+".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_snap"+str(cv_index+1)+".h5")
