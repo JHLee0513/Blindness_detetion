@@ -411,37 +411,37 @@ for cv_index in range(1):
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v201.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-    model.fit_generator(
-        train_generator,
-        steps_per_epoch=len(train_y)/batch,
-        epochs=3,
-        verbose = 1,
-        callbacks = [model_checkpoint, qwk],
-        validation_data = val_generator,
-        validation_steps = len(val_y)/batch,
-        workers=1, use_multiprocessing=False)
-    model.load_weights(save_model_name)
+    # model.fit_generator(
+    #     train_generator,
+    #     steps_per_epoch=len(train_y)/batch,
+    #     epochs=3,
+    #     verbose = 1,
+    #     callbacks = [model_checkpoint, qwk],
+    #     validation_data = val_generator,
+    #     validation_steps = len(val_y)/batch,
+    #     workers=1, use_multiprocessing=False)
+    # model.load_weights(save_model_name)
 
     train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
-    model = build_model(freeze = False)
-    # aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=75)
-    model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = Adam(lr=1e-3),
-                metrics= ['accuracy'])
-    cycle = len(train_y)/batch * 15
-    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
-    model.fit_generator(
-        train_generator,
-        steps_per_epoch=len(train_y)/batch,
-        epochs=50,
-        verbose = 1,
-        callbacks = [model_checkpoint, qwk, cyclic],
-        validation_data = val_generator,
-        validation_steps = len(val_y)/batch,
-        workers=1, use_multiprocessing=False)
+    # model = build_model(freeze = False)
+    # # aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=75)
+    # model.load_weights(save_model_name)
+    # model.compile(loss='mse', optimizer = Adam(lr=1e-3),
+    #             metrics= ['accuracy'])
+    # cycle = len(train_y)/batch * 15
+    # cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
+    # model.fit_generator(
+    #     train_generator,
+    #     steps_per_epoch=len(train_y)/batch,
+    #     epochs=50,
+    #     verbose = 1,
+    #     callbacks = [model_checkpoint, qwk, cyclic],
+    #     validation_data = val_generator,
+    #     validation_steps = len(val_y)/batch,
+    #     workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = SGD(lr=1e-3),
                 metrics= ['accuracy'])
