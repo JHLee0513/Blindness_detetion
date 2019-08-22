@@ -142,7 +142,7 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = load_ben_color(img, crop = True)
+            img = load_ben_color(img)
             # img = cv2.resize(img, (SIZE, SIZE))
             # img = val_seq.augment_image(img)
             batch_images.append(img)
@@ -224,7 +224,7 @@ train_x = train['id_code']
 train_y = train['diagnosis'].astype(int)
 val_x = val['id_code']
 val_y = val['diagnosis'].astype(int)
-train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
+train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
 val_generator = My_Generator(val_x, val_y, batch, is_train=False)
 qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                     batch_size=batch, interval=1)
@@ -251,4 +251,4 @@ for cv_index in range(3):
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_2_snap"+str(cv_index+1)+".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_3_snap"+str(cv_index+1)+".h5")
