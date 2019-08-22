@@ -73,10 +73,11 @@ def crop_image_from_gray(img,tol=7):
     #         print(img.shape)
         return img
 
-def load_ben_color(image, sigmaX=10):
+def load_ben_color(image, sigmaX=10, crop = False):
     # image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # image = crop_image_from_gray(image)
+    if crop:
+        image = crop_image_from_gray(image)
     image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
     image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
         
@@ -141,7 +142,7 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = load_ben_color(img)
+            img = load_ben_color(img, crop = True)
             # img = cv2.resize(img, (SIZE, SIZE))
             # img = val_seq.augment_image(img)
             batch_images.append(img)
@@ -250,4 +251,4 @@ for cv_index in range(3):
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_snap"+str(cv_index+1)+".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_2_snap"+str(cv_index+1)+".h5")
