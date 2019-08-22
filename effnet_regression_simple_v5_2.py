@@ -196,13 +196,13 @@ seq = iaa.Sequential(
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             # translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
-            rotate=(-80, 80), # rotate by -360 to +360 degrees
+            rotate=(-40, 40), # rotate by -180 to +180 degrees
             # shear=(-5, 5), # shear by -16 to +16 degrees
             # order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         )),
-        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
+        sometimes(iaa.size.Crop(percent = (0.05, 0.3), keep_size = True)),
         sometimes(iaa.contrast.LinearContrast(alpha = (0.75, 1.25)))
     ],
     random_order=True)
