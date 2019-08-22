@@ -27,10 +27,10 @@ from keras_radam import RAdam
 gc.enable()
 gc.collect()
 
-img_target = 456
-SIZE = 456
-IMG_SIZE = 456
-batch = 4
+img_target = 380
+SIZE = 380
+IMG_SIZE = 380
+batch = 8
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df['id_code'] += '.png'
 train_df['id_code'] = train_df['id_code'].astype(str)
@@ -209,7 +209,7 @@ seq = iaa.Sequential(
 
 
 def build_model(freeze = False):
-    model = EfficientNetB5(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
     for layers in model.layers:
         layers.trainable= not freeze
     inputs = model.input
@@ -229,7 +229,7 @@ val_generator = My_Generator(val_x, val_y, batch, is_train=False)
 qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                     batch_size=batch, interval=1)
 model = build_model(freeze = False)
-model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v201.hdf5")
+model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5")
 save_model_name = '/nas-homes/joonl4/blind_weights/snap_trash_2.hdf5'
 
 for cv_index in range(1):
