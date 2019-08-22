@@ -27,10 +27,10 @@ from keras_radam import RAdam
 gc.enable()
 gc.collect()
 
-img_target = 380
-SIZE = 380
-IMG_SIZE = 380
-batch = 8
+img_target = 300
+SIZE = 300
+IMG_SIZE = 300
+batch = 22
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df['id_code'] += '.png'
 train_df['id_code'] = train_df['id_code'].astype(str)
@@ -77,7 +77,7 @@ def crop_image_from_gray(img,tol=7):
 def load_ben_color(image, sigmaX=10):
     # image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # image = crop_image_from_gray(image)
+    image = crop_image_from_gray(image)
     image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
     image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
         
@@ -209,7 +209,7 @@ seq = iaa.Sequential(
 
 
 def build_model(freeze = False):
-    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    model = EfficientNetB3(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
     for layers in model.layers:
         layers.trainable= not freeze
     inputs = model.input
@@ -229,7 +229,7 @@ val_generator = My_Generator(val_x, val_y, batch, is_train=False)
 qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                     batch_size=batch, interval=1)
 model = build_model(freeze = False)
-model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5")
+# model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5")
 save_model_name = '/nas-homes/joonl4/blind_weights/snap_trash_2.hdf5'
 
 for cv_index in range(1):
@@ -237,14 +237,14 @@ for cv_index in range(1):
         model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = RAdam(lr=1e-3),
                 metrics= ['accuracy'])
-    cycle = len(train_y)/batch * 10
+    cycle = len(train_y)/batch * 12
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                 mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=20,
+        epochs=60,
         verbose = 1,
         callbacks = [qwk, cyclic, model_checkpoint],
         validation_data = val_generator,
