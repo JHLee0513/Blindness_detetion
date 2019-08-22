@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
-from efficientnet import EfficientNetB5, EfficientNetB3
+from efficientnet import EfficientNetB5, EfficientNetB4, EfficientNetB3
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
