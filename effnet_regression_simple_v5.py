@@ -29,7 +29,8 @@ gc.collect()
 img_target = 380
 SIZE = 380
 IMG_SIZE = 380
-batch = 12
+batch = 14
+IMAGE_SIZE = 380
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df['id_code'] += '.png'
 # train_df = train_df.astype(str)
@@ -81,6 +82,54 @@ def load_ben_color(image, sigmaX=10):
     image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
         
     return image
+
+# https://www.kaggle.com/jeru666/aptos-preprocessing/comments
+
+def info_image(im):
+    # Compute the center (cx, cy) and radius of the eye
+    cy = im.shape[0]//2
+    midline = im[cy,:]
+    midline = np.where(midline>midline.mean()/3)[0]
+    if len(midline)>im.shape[1]//2:
+        x_start, x_end = np.min(midline), np.max(midline)
+    else: # This actually rarely happens p~1/10000
+        x_start, x_end = im.shape[1]//10, 9*im.shape[1]//10
+    cx = (x_start + x_end)/2
+    r = (x_end - x_start)/2
+    return cx, cy, r
+
+def resize_image(im, augmentation=False):
+    # Crops, resizes and potentially augments the image to IMAGE_SIZE
+    cx, cy, r = info_image(im)
+    scaling = IMAGE_SIZE/(2*r)
+    rotation = 0
+    if augmentation:
+        scaling *= 1 + 0.3 * (np.random.rand()-0.5)
+        rotation = 360 * np.random.rand()
+    M = cv2.getRotationMatrix2D((cx,cy), rotation, scaling)
+    M[0,2] -= cx - IMAGE_SIZE/2
+    M[1,2] -= cy - IMAGE_SIZE/2
+    return cv2.warpAffine(im,M,(IMAGE_SIZE,IMAGE_SIZE)) # This is the most important line
+
+def subtract_median_bg_image(im):
+    k = np.max(im.shape)//20*2+1
+    bg = cv2.medianBlur(im, k)
+    return cv2.addWeighted (im, 4, bg, -4, 128)
+
+PARAM = 96
+def Radius_Reduction(img,PARAM):
+    h,w,c=img.shape
+    Frame=np.zeros((h,w,c),dtype=np.uint8)
+    cv2.circle(Frame,(int(math.floor(w/2)),int(math.floor(h/2))),int(math.floor((h*PARAM)/float(2*100))), (255,255,255), -1)
+    Frame1=cv2.cvtColor(Frame, cv2.COLOR_BGR2GRAY)
+    img1 =cv2.bitwise_and(img,img,mask=Frame1)
+    return img1
+
+def new_preprocess(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    res_image = resize_image(img)
+    sub_med = subtract_median_bg_image(res_image)
+    img_rad_red=Radius_Reduction(sub_med, PARAM)
 
 class My_Generator(Sequence):
 
@@ -259,30 +308,6 @@ def build_model(freeze = False):
     inputs = model.input
     x = model.output
     x = GlobalAveragePooling2D()(x)
-    # bn_features = BatchNormalization()(x)
-    # pt_depth = model.get_output_shape_at(0)[-1]
-    # attn_layer = Conv2D(64, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN1')(Dropout(0.5)(bn_features))
-    # attn_layer = Conv2D(16, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN2')(attn_layer)
-    # attn_layer = Conv2D(8, kernel_size = (1,1), padding = 'same', activation = 'relu', name = 'ATTN3')(attn_layer)
-    # attn_layer = Conv2D(1, 
-    #                 kernel_size = (1,1), 
-    #                 padding = 'valid', 
-    #                 activation = 'sigmoid',
-    #                 name = 'ATTN4')(attn_layer)
-    # # fan it out to all of the channels
-    # up_c2_w = np.ones((1, 1, 1, pt_depth))
-    # up_c2 = Conv2D(pt_depth, kernel_size = (1,1), padding = 'same', 
-    #             activation = 'linear', use_bias = False, weights = [up_c2_w], name = 'ATTN5')
-    # up_c2.trainable = False
-    # attn_layer = up_c2(attn_layer)
-    # mask_features = multiply([attn_layer, bn_features])
-    # gap_features = GlobalAveragePooling2D(name='GAP')(mask_features)
-    # gap_mask = GlobalAveragePooling2D(name='GAP2')(attn_layer)
-    # # to account for missing values from the attention model
-    # gap = Lambda(lambda x: x[0]/x[1], name = 'RescaleGAP')([gap_features, gap_mask])
-    # gap_dr = Dropout(0.25)(gap)
-    # dr_steps = Dropout(0.25)(Dense(128, activation = 'relu', name = 'ATTN6')(gap_dr))
-    # out_layer = Dense(1, activation = None, name = 'ATTN_regressor') (dr_steps)
     out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
     model = Model(inputs, out_layer)
     return model
@@ -405,10 +430,11 @@ for cv_index in range(1):
                         batch_size=batch, interval=1)
     model = build_model(freeze = False)
     # aw = AdamW(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
-    model.compile(loss='mse', optimizer = Adam(lr = 1e-4),
+    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=53)
+    model.compile(loss='mse', optimizer = aw,
                 metrics= ['accuracy'])
     model.summary()
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_2.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_3.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     model.fit_generator(
@@ -429,7 +455,7 @@ for cv_index in range(1):
     model = build_model(freeze = False)
     # aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=75)
     model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = Adam(lr=1e-3),
+    model.compile(loss='mse', optimizer = aw,
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 15
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
