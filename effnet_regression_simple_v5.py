@@ -131,6 +131,7 @@ def new_preprocess(img):
     res_image = resize_image(img)
     sub_med = subtract_median_bg_image(res_image)
     img_rad_red=Radius_Reduction(sub_med, PARAM)
+    return img_rad_red
 
 class My_Generator(Sequence):
 
