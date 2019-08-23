@@ -175,7 +175,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = load_ben_color(img)
+            # img = load_ben_color(img)
+            img = new_preprocess(img)
             # img = cv2.resize(img, (SIZE, SIZE))
             if(self.is_augment):
                 img = seq.augment_image(img)
@@ -190,7 +191,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = load_ben_color(img)
+            # img = load_ben_color(img)
+            img = new_preprocess(img)
             # img = cv2.resize(img, (SIZE, SIZE))
             # img = val_seq.augment_image(img)
             batch_images.append(img)
@@ -218,7 +220,7 @@ class QWKEvaluation(Callback):
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
 
-                return np.rint(pred).astype(int)
+                return np.clip(np.rint(pred), 0, 4).astype(int)
                 #return np.rint(np.sum(y,axis=1)).astype(int)
             
             score = cohen_kappa_score(flatten(self.y_val),
@@ -245,16 +247,16 @@ seq = iaa.Sequential(
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
-        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
-            translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
+            # translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
             rotate=(-80, 80), # rotate by -360 to +360 degrees
             # shear=(-5, 5), # shear by -16 to +16 degrees
             # order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
-        ))
+        )),
+        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
         # iaa.SomeOf((0, 5),
@@ -430,8 +432,8 @@ for cv_index in range(1):
                         batch_size=batch, interval=1)
     model = build_model(freeze = False)
     # aw = AdamW(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
-    aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=53)
-    model.compile(loss='mse', optimizer = aw,
+    # aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=53)
+    model.compile(loss='mse', optimizer = Adam(lr = 1e-4),
                 metrics= ['accuracy'])
     model.summary()
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_3.hdf5'
@@ -455,7 +457,7 @@ for cv_index in range(1):
     model = build_model(freeze = False)
     # aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=75)
     model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = aw,
+    model.compile(loss='mse', optimizer = Adam(1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 15
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
