@@ -73,7 +73,7 @@ def crop_image_from_gray(img,tol=7):
     #         print(img.shape)
         return img
 
-def load_ben_color(image, sigmaX=10, crop = False):
+def load_ben_color(image, sigmaX=10, crop = True):
     # image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     if crop:
@@ -194,7 +194,7 @@ seq = iaa.Sequential(
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
         sometimes(iaa.Affine(
-            scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
+            scale={"x": (0.75, 1.35), "y": (0.75, 1.25)}, # scale images to 80-120% of their size, individually per axis
             # translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
             rotate=(-40, 40), # rotate by -180 to +180 degrees
             # shear=(-5, 5), # shear by -16 to +16 degrees
@@ -235,7 +235,7 @@ save_model_name = '/nas-homes/joonl4/blind_weights/snap_trash.hdf5'
 for cv_index in range(3):
     if cv_index != 0:
         model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = Adam(lr=1e-3),
+    model.compile(loss='mse', optimizer = SGD(lr=1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 5
     cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
@@ -244,11 +244,11 @@ for cv_index in range(3):
     model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=5,
+        epochs=10,
         verbose = 1,
         callbacks = [qwk, cyclic, model_checkpoint],
         validation_data = val_generator,
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_3_snap"+str(cv_index+1)+".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_4_snap"+str(cv_index+1)+".h5")
