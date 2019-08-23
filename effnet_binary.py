@@ -31,10 +31,10 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 256#256
-SIZE = 256
+img_target = 380#256
+SIZE = 380
 batch = 8
-train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
+train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 train_df = train_df.astype(str)
 test_df = test_df.astype(str)
@@ -137,10 +137,26 @@ class QWKEvaluation(Callback):
                                                   steps=np.ceil(float(len(self.y_val)) / float(self.batch_size)),
                                                   workers=1, use_multiprocessing=True,
                                                   verbose=1)
+            def get_pred(y):
+                pred = []
+                for item in y:
+                    if item[0] < 0.5:
+                        pred.append(0)
+                    elif item[1] < 0.5:
+                        pred.append(1)
+                    elif item[2] < 0.5:
+                        pred.append(2)
+                    elif item[3] < 0.5:
+                        pred.append(3)
+                    elif item[4] < 0.5:
+                        pred.append(4)
+                return pred
+            
             def flatten(y):
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
-                return np.rint(np.sum(y, axis=1)).astype(int) - 1
+                # return np.rint(np.sum(y, axis=1)).astype(int) - 1
+                return get_pred(y)
                 #return np.rint(np.sum(y,axis=1)).astype(int)
             
             score = cohen_kappa_score(flatten(self.y_val),
@@ -161,7 +177,7 @@ seq = iaa.Sequential(
     [
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
-        iaa.Flipud(0.5), # vertically flip 20% of all images
+        iaa.Flipud(0.5), # vertically flip 50% of all images
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -216,7 +232,7 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=420)
+kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=69420)
 #kf.get_n_splits(x)
 train_all = []
 evaluate_all = []
@@ -239,15 +255,15 @@ for cv_index in range(1,6):
     log_fold = cv_index
     # qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True)
-    train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment = True)
+    # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
 #model = Xception(include_top = False, weights = 'imagenet', input_shape = (img_target,img_target,3), pooling = 'max')
-    model = EfficientNetB5(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = 'avg')
     for layers in model.layers:
         layers.trainable=True
     inputs = model.input
@@ -259,10 +275,10 @@ for cv_index in range(1,6):
     model = Model(inputs, x)
     model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy', 'mse'])
-    model.summary()
+    # model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
     # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v9'+str(fold)+'.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/effnet_binary_new_fold'+str(fold)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     #csv = CSVLogger('./raw_effnet_pretrained_binary_fold'+str(fold)+'.csv', separator=',', append=False)
@@ -270,21 +286,9 @@ for cv_index in range(1,6):
     cyclic = CyclicLR(mode='exp_range', base_lr = 0.0001, max_lr = 0.001, step_size = cycle)  
     #model.load_weights(save_model_name)
     model.fit_generator(
-        train_mixup,
-        steps_per_epoch=2560/batch,
-        epochs=10,
-        verbose = 1,
-        #initial_epoch = 14,
-        callbacks = [model_checkpoint, qwk],
-        validation_data = val_generator,
-        validation_steps = 1100/batch,
-        workers=1, use_multiprocessing=False)
-    model.load_weights(save_model_name)
-    # Finetune after mixup
-    model.fit_generator(
         train_generator,
         steps_per_epoch=2560/batch,
-        epochs=10,
+        epochs=20,
         verbose = 1,
         #initial_epoch = 14,
         callbacks = [model_checkpoint, qwk],
@@ -293,22 +297,4 @@ for cv_index in range(1,6):
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
 
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v9"+str(fold)+ ".h5")
-    '''
-    model.load_weights(save_model_name)
-    model.compile(loss='binary_crossentropy', optimizer = SGD(lr = 0.003, momentum = 0.9, nesterov = True),
-                metrics= ['accuracy', 'mse'])
-    model.fit_generator(
-        train_generator,
-        steps_per_epoch=2560/batch,
-        epochs=30,
-        verbose = 1,
-        callbacks = [cyclic, model_checkpoint, qwk],
-        validation_data = val_generator,
-        validation_steps = 1100/batch,
-        workers=1, use_multiprocessing=False)
-    fold += 1
-    #model.load_weights(save_model_name)
-
-    #model.save('raw_effnet_pretrained_v2.h5')
-    '''
+    model.save("/nas-homes/joonl4/blind_weights/effnet_binary_new_fold"+str(fold)+ ".h5")
