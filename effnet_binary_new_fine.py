@@ -39,7 +39,7 @@ train_df['id_code'] += '.png'
 # train_df['id_code'] = train_df['id_code'].astype(str)
 # df_2019 = train_df[train_df['id_code'].str.contains(".png")]
 
-train, val = train_test_split(train_df, test_size = 0.2, random_state = 69420, stratify = train_df['diagnosis'])
+train, val = train_test_split(train_df, test_size = 0.2, random_state = 420, stratify = train_df['diagnosis'])
 # train_2019 = train_2019.reset_index(drop = True)
 # val = val_2019.reset_index(drop = True)
 
@@ -186,7 +186,7 @@ seq = iaa.Sequential(
     [
         # apply the following augmenters to most images
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
-        iaa.Flipud(0.2), # vertically flip 50% of all images
+        iaa.Flipud(0.2), # vertically flip 20% of all images
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
@@ -264,7 +264,7 @@ for cv_index in range(1):
     # log_fold = cv_index
     # qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
     # train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment = False)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment = True)
     # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
@@ -282,11 +282,11 @@ for cv_index in range(1):
     x = Dropout(rate = 0.5) (x)
     x = Dense(5, activation = 'sigmoid') (x)
     model = Model(inputs, x)
-    model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-4),
-                metrics= ['accuracy', 'mse'])
     # model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
     model.load_weights('/nas-homes/joonl4/blind_weights/effnet_binary_new_fold0.hdf5')
+    model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
+                metrics= ['accuracy', 'mse'])
     save_model_name = '/nas-homes/joonl4/blind_weights/effnet_binary_new_fold'+str(cv_index)+'_finetuned.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
