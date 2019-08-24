@@ -132,15 +132,15 @@ for row in train_y:
     #print(row)
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 #binarized labeling
-for row in val_y:
-    idx = np.argmax(row)
-    for i in range(idx+1):
-        row[i] = 0.95 
-#label smoothening
-    for j in range(idx+1, 5):
-#print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
-        row[j] = 0.05 #label smoothening
-    #print(row)
+# for row in val_y:
+#     idx = np.argmax(row)
+#     for i in range(idx+1):
+#         row[i] = 0.95 
+# #label smoothening
+#     for j in range(idx+1, 5):
+# #print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
+#         row[j] = 0.05 #label smoothening
+#     #print(row)
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 
 qwk_ckpt_name = './trash.h5'
@@ -299,7 +299,6 @@ for cv_index in range(1):
         steps_per_epoch=2560/batch,
         epochs=10,
         verbose = 1,
-        initial_epoch = 41,
         callbacks = [model_checkpoint, qwk],
         validation_data = val_generator,
         validation_steps = 1100/batch,
