@@ -320,4 +320,4 @@ for cv_index in range(1):
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
 
-    model.save("/nas-homes/joonl4/blind_weights/effnet_binary_new_fold"+str(fold)+ ".h5")
+    model.save("/nas-homes/joonl4/blind_weights/effnet_binary_new_fold"+str(cv_index)+ ".h5")
