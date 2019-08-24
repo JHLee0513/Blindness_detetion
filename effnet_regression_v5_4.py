@@ -33,7 +33,7 @@ IMG_SIZE = 380
 batch = 12
 IMAGE_SIZE = 380
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
-# train_df['id_code'] += '.png'
+train_df['id_code'] += '.png'
 # train_df = train_df.astype(str)
 # df_2019 = train_df[train_df['id_code'].str.contains(".png")]
 
@@ -330,7 +330,7 @@ for cv_index in range(1):
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_5.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
