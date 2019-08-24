@@ -160,26 +160,12 @@ class QWKEvaluation(Callback):
                                                   steps=np.ceil(float(len(self.y_val)) / float(self.batch_size)),
                                                   workers=1, use_multiprocessing=True,
                                                   verbose=1)
-            def get_pred(y):
-                pred = []
-                for item in y:
-                    if item[0] < 0.5:
-                        pred.append(0)
-                    elif item[1] < 0.5:
-                        pred.append(1)
-                    elif item[2] < 0.5:
-                        pred.append(2)
-                    elif item[3] < 0.5:
-                        pred.append(3)
-                    elif item[4] < 0.5:
-                        pred.append(4)
-                return pred
             
             def flatten(y):
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
-                # return np.rint(np.sum(y, axis=1)).astype(int) - 1
-                return get_pred(y)
+                return np.clip(np.rint(np.sum(y, axis=1)).astype(int) - 1, 0, 4)
+                # return get_pred(y)
                 #return np.rint(np.sum(y,axis=1)).astype(int)
             
             score = cohen_kappa_score(flatten(self.y_val),
