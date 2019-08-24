@@ -299,7 +299,7 @@ for cv_index in range(1):
         steps_per_epoch=2560/batch,
         epochs=75,
         verbose = 1,
-        #initial_epoch = 14,
+        initial_epoch = 41,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
         validation_steps = 1100/batch,
