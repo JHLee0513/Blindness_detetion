@@ -45,7 +45,10 @@ val = val_2019.reset_index(drop = True)
 
 train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
 train = train_df.reset_index(drop = True)
-
+train_x = train['id_code']
+train_y = train['diagnosis'].astype(int)
+val_x = val['id_code']
+val_y = val['diagnosis'].astype(int)
 # log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
 # log_fold = 1
 class My_Generator(Sequence):
@@ -113,11 +116,12 @@ class My_Generator(Sequence):
         batch_y = np.array(batch_y, np.float32)
         return batch_images, batch_y
 
-x = train_df['id_code']
-y = to_categorical(train_df['diagnosis'], num_classes=5)
+# x = train_df['id_code']
+train_y = to_categorical(train_y, num_classes=5)
+val_y = to_categorical(val_y, num_classes=5)
 
 #binarized labeling
-for row in y:
+for row in train_y:
     idx = np.argmax(row)
     for i in range(idx+1):
         row[i] = 0.95 
@@ -127,6 +131,18 @@ for row in y:
         row[j] = 0.05 #label smoothening
     #print(row)
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
+#binarized labeling
+for row in val_y:
+    idx = np.argmax(row)
+    for i in range(idx+1):
+        row[i] = 0.95 
+#label smoothening
+    for j in range(idx+1, 5):
+#print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
+        row[j] = 0.05 #label smoothening
+    #print(row)
+#train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
+
 qwk_ckpt_name = './trash.h5'
 
 class QWKEvaluation(Callback):
@@ -239,29 +255,29 @@ seq = iaa.Sequential(
     ],
     random_order=True)
 
-kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=69420)
-#kf.get_n_splits(x)
-train_all = []
-evaluate_all = []
-for train_idx, test_idx in kf.split(x, train_df['diagnosis']):
-    train_all.append(train_idx)
-    evaluate_all.append(test_idx)
+# kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=69420)
+# #kf.get_n_splits(x)
+# train_all = []
+# evaluate_all = []
+# for train_idx, test_idx in kf.split(x, train_df['diagnosis']):
+#     train_all.append(train_idx)
+#     evaluate_all.append(test_idx)
 
-def get_cv_data(cv_index):
-    train_index = train_all[cv_index-1]
-    evaluate_index = evaluate_all[cv_index-1]
-    x_train = np.array(train_df.id_code[train_index])
-    y_train = np.array(y[train_index])
-    x_valid = np.array(train_df.id_code[evaluate_index])
-    y_valid = np.array(y[evaluate_index])
-    return x_train,y_train,x_valid,y_valid
+# def get_cv_data(cv_index):
+#     train_index = train_all[cv_index-1]
+#     evaluate_index = evaluate_all[cv_index-1]
+#     x_train = np.array(train_df.id_code[train_index])
+#     y_train = np.array(y[train_index])
+#     x_valid = np.array(train_df.id_code[evaluate_index])
+#     y_valid = np.array(y[evaluate_index])
+#     return x_train,y_train,x_valid,y_valid
 
 #for cv_index in range(1,6):
-for cv_index in range(1,6):
-    fold = cv_index
-    log_fold = cv_index
+for cv_index in range(1):
+    # fold = cv_index
+    # log_fold = cv_index
     # qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
-    train_x, train_y, val_x, val_y = get_cv_data(cv_index)
+    # train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment = True)
     # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
