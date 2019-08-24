@@ -33,11 +33,18 @@ gc.collect()
 
 img_target = 380#256
 SIZE = 380
-batch = 8
-train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
-test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
-train_df = train_df.astype(str)
-test_df = test_df.astype(str)
+batch = 10
+train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
+# train_df['id_code'] += '.png'
+train_df['id_code'] = train_df['id_code'].astype(str)
+df_2019 = train_df[train_df['id_code'].str.contains(".png")]
+
+train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 69420, stratify = df_2019['diagnosis'])
+train_2019 = train_2019.reset_index(drop = True)
+val = val_2019.reset_index(drop = True)
+
+train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
+train = train_df.reset_index(drop = True)
 
 # log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
 # log_fold = 1
@@ -291,7 +298,7 @@ for cv_index in range(1,6):
         epochs=20,
         verbose = 1,
         #initial_epoch = 14,
-        callbacks = [model_checkpoint, qwk],
+        callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
         validation_steps = 1100/batch,
         workers=1, use_multiprocessing=False)
