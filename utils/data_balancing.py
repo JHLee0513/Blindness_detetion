@@ -11,7 +11,7 @@ import gc
 from tqdm import tqdm
 gc.enable()
 gc.collect()
-balancing_limit = 2000
+balancing_limit = 5000
 
 old_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
 old_df2 = pd.read_csv("/nas-homes/joonl4/blind_2015/retinopathy_solution.csv")
@@ -63,5 +63,5 @@ for i in range(5):
 print("Balanced DATA")
 print(balanced_df['diagnosis'].value_counts())
 print(balanced_df.head())
-balanced_df.to_csv("/nas-homes/joonl4/blind/train_balanced.csv")
+balanced_df.to_csv("/nas-homes/joonl4/blind/train_balanced.2csv")
 print("balanced data list generated!")
