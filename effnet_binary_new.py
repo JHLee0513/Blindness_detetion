@@ -224,7 +224,7 @@ class QWKEvaluation(Callback):
                     else:
                         predicted_class_indices.append(4)
 
-                return predicted_class_indices
+                return np.array(predicted_class_indices)
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
                 # return np.clip(np.rint(np.sum(y, axis=1)).astype(int) - 1, 0, 4)
@@ -330,7 +330,7 @@ for cv_index in range(1):
     train_generator = My_Generator(train_x, ord_train_y, batch, is_train=True, augment = True)
     # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
     val_generator = My_Generator(val_x, ord_val_y, batch, is_train=False)
-    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+    qwk = QWKEvaluation(validation_data=(val_generator, ord_val_y),
                         batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
