@@ -222,7 +222,7 @@ class QWKEvaluation(Callback):
                     elif pred[0] >= 0.5 and pred[1] >= 0.5 and pred[2] >= 0.5 and pred[3] < 0.5:
                         predicted_class_indices.append(3)
                     else:
-                    predicted_class_indices.append(4)
+                        predicted_class_indices.append(4)
 
                 return predicted_class_indices
                 #print(np.argmax(y,axis = 1).astype(int))
