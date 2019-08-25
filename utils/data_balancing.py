@@ -63,5 +63,5 @@ for i in range(5):
 print("Balanced DATA")
 print(balanced_df['diagnosis'].value_counts())
 print(balanced_df.head())
-balanced_df.to_csv("/nas-homes/joonl4/blind/train_balanced.2csv")
+balanced_df.to_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 print("balanced data list generated!")
