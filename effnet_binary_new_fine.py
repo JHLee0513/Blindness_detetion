@@ -42,7 +42,8 @@ train_df['id_code'] += '.png'
 train, val = train_test_split(train_df, test_size = 0.2, random_state = 420, stratify = train_df['diagnosis'])
 # train_2019 = train_2019.reset_index(drop = True)
 # val = val_2019.reset_index(drop = True)
-
+train = train.reset_index(drop = True)
+val = val.reset_index(drop = True)
 # train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
 # train = train_df.reset_index(drop = True)
 train_x = train['id_code']

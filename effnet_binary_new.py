@@ -31,9 +31,11 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 380#256
+img_target = 380
 SIZE = 380
-batch = 10
+IMG_SIZE = 380
+batch = 12
+IMAGE_SIZE = 380
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df['id_code'] += '.png'
 train_df['id_code'] = train_df['id_code'].astype(str)
@@ -51,6 +53,54 @@ val_x = val['id_code']
 val_y = val['diagnosis'].astype(int)
 # log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
 # log_fold = 1
+
+def info_image(im):
+    # Compute the center (cx, cy) and radius of the eye
+    cy = im.shape[0]//2
+    midline = im[cy,:]
+    midline = np.where(midline>midline.mean()/3)[0]
+    if len(midline)>im.shape[1]//2:
+        x_start, x_end = np.min(midline), np.max(midline)
+    else: # This actually rarely happens p~1/10000
+        x_start, x_end = im.shape[1]//10, 9*im.shape[1]//10
+    cx = (x_start + x_end)/2
+    r = (x_end - x_start)/2
+    return cx, cy, r
+
+def resize_image(im, augmentation=False):
+    # Crops, resizes and potentially augments the image to IMAGE_SIZE
+    cx, cy, r = info_image(im)
+    scaling = IMAGE_SIZE/(2*r)
+    rotation = 0
+    if augmentation:
+        scaling *= 1 + 0.3 * (np.random.rand()-0.5)
+        rotation = 360 * np.random.rand()
+    M = cv2.getRotationMatrix2D((cx,cy), rotation, scaling)
+    M[0,2] -= cx - IMAGE_SIZE/2
+    M[1,2] -= cy - IMAGE_SIZE/2
+    return cv2.warpAffine(im,M,(IMAGE_SIZE,IMAGE_SIZE)) # This is the most important line
+
+def subtract_median_bg_image(im):
+    k = np.max(im.shape)//20*2+1
+    bg = cv2.medianBlur(im, k)
+    return cv2.addWeighted (im, 4, bg, -4, 128)
+
+PARAM = 96
+def Radius_Reduction(img,PARAM):
+    h,w,c=img.shape
+    Frame=np.zeros((h,w,c),dtype=np.uint8)
+    cv2.circle(Frame,(int(math.floor(w/2)),int(math.floor(h/2))),int(math.floor((h*PARAM)/float(2*100))), (255,255,255), -1)
+    Frame1=cv2.cvtColor(Frame, cv2.COLOR_BGR2GRAY)
+    img1 =cv2.bitwise_and(img,img,mask=Frame1)
+    return img1
+
+def new_preprocess(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    res_image = resize_image(img)
+    sub_med = subtract_median_bg_image(res_image)
+    img_rad_red=Radius_Reduction(sub_med, PARAM)
+    return img_rad_red
+
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -96,7 +146,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            # img = cv2.resize(img, (SIZE, SIZE))
+            img = new_preprocess(img)
             if(self.is_augment):
                 img = seq.augment_image(img)
             batch_images.append(img)
@@ -110,7 +161,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            # img = cv2.resize(img, (SIZE, SIZE))
+            img = new_preprocess(img)
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
         batch_y = np.array(batch_y, np.float32)
@@ -132,14 +184,14 @@ for row in train_y:
     #print(row)
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 #binarized labeling
-for row in val_y:
-    idx = np.argmax(row)
-    for i in range(idx+1):
-        row[i] = 0.95 
-#label smoothening
-    for j in range(idx+1, 5):
-#print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
-        row[j] = 0.05 #label smoothening
+# for row in val_y:
+#     idx = np.argmax(row)
+#     for i in range(idx+1):
+#         row[i] = 0.95 
+# #label smoothening
+#     for j in range(idx+1, 5):
+# #print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
+#         row[j] = 0.05 #label smoothening
     #print(row)
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 
@@ -277,9 +329,9 @@ for cv_index in range(1):
         layers.trainable=True
     inputs = model.input
     x = model.output
-    x = Dropout(rate = 0.5) (x)
-    x = Dense(512, activation = 'elu') (x)
-    x = Dropout(rate = 0.5) (x)
+    x = Dropout(rate = 0.4) (x)
+    # x = Dense(512, activation = 'elu') (x)
+    # x = Dropout(rate = 0.5) (x)
     x = Dense(5, activation = 'sigmoid') (x)
     model = Model(inputs, x)
     model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
