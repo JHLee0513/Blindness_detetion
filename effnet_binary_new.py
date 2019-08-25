@@ -180,17 +180,17 @@ ord_val_y = np.zeros((4, val_y.shape[0]))
 for count, row in enumerate(train_y):
     idx = row
     for i in range(idx+1):
-        row[count, i] = 0.95 
+        ord_train_y[count, i] = 0.95 
 #label smoothening
     for j in range(idx+1, 5):
-        row[count, j] = 0.05 #label smoothening
+        ord_train_y[count, j] = 0.05 #label smoothening
 # binarized labeling
 for count, row in enumerate(val_y):
     idx = row
     for i in range(idx+1):
-        row[count, i] = 1.0 
+        ord_val_y[count, i] = 1.0 
     for j in range(idx+1, 5):
-        row[count, j] = 0.0
+        ord_val_y[count, j] = 0.0
 
 qwk_ckpt_name = './trash.h5'
 
@@ -327,9 +327,9 @@ for cv_index in range(1):
     # log_fold = cv_index
     # qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
     # train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment = True)
+    train_generator = My_Generator(train_x, ord_train_y, batch, is_train=True, augment = True)
     # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
+    val_generator = My_Generator(val_x, ord_val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
