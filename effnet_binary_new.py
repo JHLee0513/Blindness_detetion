@@ -173,8 +173,8 @@ class My_Generator(Sequence):
 # train_y = to_categorical(train_y, num_classes=5)
 # val_y = to_categorical(val_y, num_classes=5)
 
-ord_train_y = np.zeros((4, train_y.shape[0]))
-ord_val_y = np.zeros((4, val_y.shape[0]))
+ord_train_y = np.zeros((train_y.shape[0], 4))
+ord_val_y = np.zeros((val_y.shape[0], 4))
 
 # binarized labeling
 for count, row in enumerate(train_y):
