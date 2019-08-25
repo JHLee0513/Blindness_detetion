@@ -284,7 +284,7 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
    
-    # model.load_weights(save_model_name)
+    model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 10
@@ -293,6 +293,7 @@ for cv_index in range(1):
         train_generator,
         steps_per_epoch=len(train_y)/batch,
         epochs=20,
+        initial_epoch = 15,
         verbose = 1,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
