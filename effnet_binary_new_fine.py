@@ -31,9 +31,11 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 380#256
+img_target = 380
 SIZE = 380
-batch = 10
+IMG_SIZE = 380
+batch = 12
+IMAGE_SIZE = 380
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
 # train_df['id_code'] = train_df['id_code'].astype(str)
@@ -52,6 +54,54 @@ val_x = val['id_code']
 val_y = val['diagnosis'].astype(int)
 # log = open("/home/joonl4/Blindness_detection_binary_log.txt", "a")
 # log_fold = 1
+
+def info_image(im):
+    # Compute the center (cx, cy) and radius of the eye
+    cy = im.shape[0]//2
+    midline = im[cy,:]
+    midline = np.where(midline>midline.mean()/3)[0]
+    if len(midline)>im.shape[1]//2:
+        x_start, x_end = np.min(midline), np.max(midline)
+    else: # This actually rarely happens p~1/10000
+        x_start, x_end = im.shape[1]//10, 9*im.shape[1]//10
+    cx = (x_start + x_end)/2
+    r = (x_end - x_start)/2
+    return cx, cy, r
+
+def resize_image(im, augmentation=False):
+    # Crops, resizes and potentially augments the image to IMAGE_SIZE
+    cx, cy, r = info_image(im)
+    scaling = IMAGE_SIZE/(2*r)
+    rotation = 0
+    if augmentation:
+        scaling *= 1 + 0.3 * (np.random.rand()-0.5)
+        rotation = 360 * np.random.rand()
+    M = cv2.getRotationMatrix2D((cx,cy), rotation, scaling)
+    M[0,2] -= cx - IMAGE_SIZE/2
+    M[1,2] -= cy - IMAGE_SIZE/2
+    return cv2.warpAffine(im,M,(IMAGE_SIZE,IMAGE_SIZE)) # This is the most important line
+
+def subtract_median_bg_image(im):
+    k = np.max(im.shape)//20*2+1
+    bg = cv2.medianBlur(im, k)
+    return cv2.addWeighted (im, 4, bg, -4, 128)
+
+PARAM = 96
+def Radius_Reduction(img,PARAM):
+    h,w,c=img.shape
+    Frame=np.zeros((h,w,c),dtype=np.uint8)
+    cv2.circle(Frame,(int(math.floor(w/2)),int(math.floor(h/2))),int(math.floor((h*PARAM)/float(2*100))), (255,255,255), -1)
+    Frame1=cv2.cvtColor(Frame, cv2.COLOR_BGR2GRAY)
+    img1 =cv2.bitwise_and(img,img,mask=Frame1)
+    return img1
+
+def new_preprocess(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    res_image = resize_image(img)
+    sub_med = subtract_median_bg_image(res_image)
+    img_rad_red=Radius_Reduction(sub_med, PARAM)
+    return img_rad_red
+
 class My_Generator(Sequence):
 
     def __init__(self, image_filenames, labels,
@@ -97,7 +147,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            # img = cv2.resize(img, (SIZE, SIZE))
+            img = new_preprocess(img)
             if(self.is_augment):
                 img = seq.augment_image(img)
             batch_images.append(img)
@@ -111,26 +162,31 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            img = cv2.resize(img, (SIZE, SIZE))
+            # img = cv2.resize(img, (SIZE, SIZE))
+            img = new_preprocess(img)
             batch_images.append(img)
         batch_images = np.array(batch_images, np.float32) / 255
         batch_y = np.array(batch_y, np.float32)
         return batch_images, batch_y
 
-# x = train_df['id_code']
-train_y = to_categorical(train_y, num_classes=5)
-val_y = to_categorical(val_y, num_classes=5)
+ord_train_y = np.zeros((train_y.shape[0], 4))
+ord_val_y = np.zeros((val_y.shape[0], 4))
 
-#binarized labeling
-for row in train_y:
-    idx = np.argmax(row)
-    for i in range(idx+1):
-        row[i] = 0.95 
+# binarized labeling
+for count, row in enumerate(train_y):
+    idx = row
+    for i in range(idx):
+        ord_train_y[count, i] = 0.95 
 #label smoothening
-    for j in range(idx+1, 5):
-#print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
-        row[j] = 0.05 #label smoothening
-    #print(row)
+    for j in range(idx, 4):
+        ord_train_y[count, j] = 0.05 #label smoothening
+# binarized labeling
+for count, row in enumerate(val_y):
+    idx = row
+    for i in range(idx):
+        ord_val_y[count, i] = 1.0 
+    for j in range(idx, 4):
+        ord_val_y[count, j] = 0.0
 #train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
 #binarized labeling
 # for row in val_y:
@@ -163,9 +219,23 @@ class QWKEvaluation(Callback):
                                                   verbose=1)
             
             def flatten(y):
+                predicted_class_indices = []
+                for pred in y:
+                    if pred[0] < 0.5 :
+                        predicted_class_indices.append(0)
+                    elif pred[0] >= 0.5 and pred[1] < 0.5:
+                        predicted_class_indices.append(1)
+                    elif pred[0] >= 0.5 and pred[1] >= 0.5 and pred[2] < 0.5:
+                        predicted_class_indices.append(2)
+                    elif pred[0] >= 0.5 and pred[1] >= 0.5 and pred[2] >= 0.5 and pred[3] < 0.5:
+                        predicted_class_indices.append(3)
+                    else:
+                        predicted_class_indices.append(4)
+
+                return np.array(predicted_class_indices)
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
-                return np.clip(np.rint(np.sum(y, axis=1)).astype(int) - 1, 0, 4)
+                # return np.clip(np.rint(np.sum(y, axis=1)).astype(int) - 1, 0, 4)
                 # return get_pred(y)
                 #return np.rint(np.sum(y,axis=1)).astype(int)
             
@@ -190,55 +260,55 @@ seq = iaa.Sequential(
         iaa.Flipud(0.2), # vertically flip 20% of all images
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
-            translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
+            # translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
             rotate=(-10, 10), # rotate by -45 to +45 degrees
-            shear=(-5, 5), # shear by -16 to +16 degrees
-            order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
+            # shear=(-5, 5), # shear by -16 to +16 degrees
+            # order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
-        )),
+        ))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
-        iaa.SomeOf((0, 5),
-            [
-                sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
-                iaa.OneOf([
-                    iaa.GaussianBlur((0, 1.0)), # blur images with a sigma between 0 and 3.0
-                    iaa.AverageBlur(k=(3, 5)), # blur image using local means with kernel sizes between 2 and 7
-                    iaa.MedianBlur(k=(3, 5)), # blur image using local medians with kernel sizes between 2 and 7
-                ]),
-                iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)), # sharpen images
-                iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)), # emboss images
-                # search either for all edges or for directed edges,
-                # blend the result with the original image using a blobby mask
-                iaa.SimplexNoiseAlpha(iaa.OneOf([
-                    iaa.EdgeDetect(alpha=(0.5, 1.0)),
-                    iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
-                ])),
-                iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
-                iaa.OneOf([
-                    iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
-                    iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
-                ]),
-                iaa.Invert(0.01, per_channel=True), # invert color channels
-                iaa.Add((-2, 2), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
-                iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
-                # either change the brightness of the whole image (sometimes
-                # per channel) or change the brightness of subareas
-                iaa.OneOf([
-                    iaa.Multiply((0.9, 1.1), per_channel=0.5),
-                    iaa.FrequencyNoiseAlpha(
-                        exponent=(-1, 0),
-                        first=iaa.Multiply((0.9, 1.1), per_channel=True),
-                        second=iaa.ContrastNormalization((0.9, 1.1))
-                    )
-                ]),
-                sometimes(iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)), # move pixels locally around (with random strengths)
-                sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05))), # sometimes move parts of the image around
-                sometimes(iaa.PerspectiveTransform(scale=(0.01, 0.1)))
-            ],
-            random_order=True
-        )
+        # iaa.SomeOf((0, 5),
+        #     [
+        #         sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
+        #         iaa.OneOf([
+        #             iaa.GaussianBlur((0, 1.0)), # blur images with a sigma between 0 and 3.0
+        #             iaa.AverageBlur(k=(3, 5)), # blur image using local means with kernel sizes between 2 and 7
+        #             iaa.MedianBlur(k=(3, 5)), # blur image using local medians with kernel sizes between 2 and 7
+        #         ]),
+        #         iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)), # sharpen images
+        #         iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)), # emboss images
+        #         # search either for all edges or for directed edges,
+        #         # blend the result with the original image using a blobby mask
+        #         iaa.SimplexNoiseAlpha(iaa.OneOf([
+        #             iaa.EdgeDetect(alpha=(0.5, 1.0)),
+        #             iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
+        #         ])),
+        #         iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
+        #         iaa.OneOf([
+        #             iaa.Dropout((0.01, 0.05), per_channel=0.5), # randomly remove up to 10% of the pixels
+        #             iaa.CoarseDropout((0.01, 0.03), size_percent=(0.01, 0.02), per_channel=0.2),
+        #         ]),
+        #         iaa.Invert(0.01, per_channel=True), # invert color channels
+        #         iaa.Add((-2, 2), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
+        #         iaa.AddToHueAndSaturation((-1, 1)), # change hue and saturation
+        #         # either change the brightness of the whole image (sometimes
+        #         # per channel) or change the brightness of subareas
+        #         iaa.OneOf([
+        #             iaa.Multiply((0.9, 1.1), per_channel=0.5),
+        #             iaa.FrequencyNoiseAlpha(
+        #                 exponent=(-1, 0),
+        #                 first=iaa.Multiply((0.9, 1.1), per_channel=True),
+        #                 second=iaa.ContrastNormalization((0.9, 1.1))
+        #             )
+        #         ]),
+        #         sometimes(iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)), # move pixels locally around (with random strengths)
+        #         sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05))), # sometimes move parts of the image around
+        #         sometimes(iaa.PerspectiveTransform(scale=(0.01, 0.1)))
+        #     ],
+        #     random_order=True
+        # )
     ],
     random_order=True)
 
@@ -265,10 +335,10 @@ for cv_index in range(1):
     # log_fold = cv_index
     # qwk_ckpt_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_kappa_fold'+str(fold)+'.h5'
     # train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment = True)
+    train_generator = My_Generator(train_x, ord_train_y, batch, is_train=True, augment = True)
     # train_mixup = My_Generator(train_x, train_y, batch, is_train=True, mix=True, augment=True)
-    val_generator = My_Generator(val_x, val_y, batch, is_train=False)
-    qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+    val_generator = My_Generator(val_x, ord_val_y, batch, is_train=False)
+    qwk = QWKEvaluation(validation_data=(val_generator, ord_val_y),
                         batch_size=batch, interval=1)
 #model = ResNet50(include_top = False, weights = 'imagenet', 
 #                    input_shape = (img_target,img_target,3), pooling = 'avg') #pooling = 'avg'
@@ -278,10 +348,8 @@ for cv_index in range(1):
         layers.trainable=True
     inputs = model.input
     x = model.output
-    x = Dropout(rate = 0.5) (x)
-    x = Dense(512, activation = 'elu') (x)
-    x = Dropout(rate = 0.5) (x)
-    x = Dense(5, activation = 'sigmoid') (x)
+    x = Dropout(rate = 0.4) (x)
+    x = Dense(4, activation = 'sigmoid') (x)
     model = Model(inputs, x)
     # model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
