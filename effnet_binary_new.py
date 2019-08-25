@@ -35,7 +35,7 @@ gc.collect()
 img_target = 380
 SIZE = 380
 IMG_SIZE = 380
-batch = 12
+batch = 13
 IMAGE_SIZE = 380
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 # train_df['id_code'] += '.png'
@@ -170,31 +170,27 @@ class My_Generator(Sequence):
         return batch_images, batch_y
 
 # x = train_df['id_code']
-train_y = to_categorical(train_y, num_classes=5)
-val_y = to_categorical(val_y, num_classes=5)
+# train_y = to_categorical(train_y, num_classes=5)
+# val_y = to_categorical(val_y, num_classes=5)
 
-#binarized labeling
-for row in train_y:
-    idx = np.argmax(row)
+ord_train_y = np.zeros((4, train_y.shape[0]))
+ord_val_y = np.zeros((4, val_y.shape[0]))
+
+# binarized labeling
+for count, row in enumerate(train_y):
+    idx = row
     for i in range(idx+1):
-        row[i] = 0.95 
+        row[count, i] = 0.95 
 #label smoothening
     for j in range(idx+1, 5):
-#print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
-        row[j] = 0.05 #label smoothening
-    #print(row)
-#train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
-#binarized labeling
-# for row in val_y:
-#     idx = np.argmax(row)
-#     for i in range(idx+1):
-#         row[i] = 0.95 
-# #label smoothening
-#     for j in range(idx+1, 5):
-# #print("argmax at " + str(idx) + "0.1 till " + str(idx+1))
-#         row[j] = 0.05 #label smoothening
-    #print(row)
-#train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, stratify = train_df['diagnosis'])
+        row[count, j] = 0.05 #label smoothening
+# binarized labeling
+for count, row in enumerate(val_y):
+    idx = row
+    for i in range(idx+1):
+        row[count, i] = 1.0 
+    for j in range(idx+1, 5):
+        row[count, j] = 0.0
 
 qwk_ckpt_name = './trash.h5'
 
@@ -215,9 +211,23 @@ class QWKEvaluation(Callback):
                                                   verbose=1)
             
             def flatten(y):
+                predicted_class_indices = []
+                for pred in y:
+                    if pred[0] < 0.5 :
+                        predicted_class_indices.append(0)
+                    elif pred[0] >= 0.5 and pred[1] < 0.5:
+                        predicted_class_indices.append(1)
+                    elif pred[0] >= 0.5 and pred[1] >= 0.5 and pred[2] < 0.5:
+                        predicted_class_indices.append(2)
+                    elif pred[0] >= 0.5 and pred[1] >= 0.5 and pred[2] >= 0.5 and pred[3] < 0.5:
+                        predicted_class_indices.append(3)
+                    else:
+                    predicted_class_indices.append(4)
+
+                return predicted_class_indices
                 #print(np.argmax(y,axis = 1).astype(int))
                 #return np.argmax(y, axis=1).astype(int)
-                return np.clip(np.rint(np.sum(y, axis=1)).astype(int) - 1, 0, 4)
+                # return np.clip(np.rint(np.sum(y, axis=1)).astype(int) - 1, 0, 4)
                 # return get_pred(y)
                 #return np.rint(np.sum(y,axis=1)).astype(int)
             
@@ -333,10 +343,10 @@ for cv_index in range(1):
     x = Dropout(rate = 0.4) (x)
     # x = Dense(512, activation = 'elu') (x)
     # x = Dropout(rate = 0.5) (x)
-    x = Dense(5, activation = 'sigmoid') (x)
+    x = Dense(4, activation = 'sigmoid') (x)
     model = Model(inputs, x)
-    model.compile(loss='binary_crossentropy', optimizer = Adam(lr = 1e-3),
-                metrics= ['accuracy', 'mse'])
+    model.compile(loss='binary_crossentropy', optimizer = RMSprop(lr = 1e-3),
+                metrics= ['mse'])
     # model.summary()
     # model.load_weights("/nas-homes/joonl4/blind_weights/raw_pretrain_effnet_B4.hdf5")
     # model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_binary_smoothen_fold_v2'+str(fold)+'.hdf5')
