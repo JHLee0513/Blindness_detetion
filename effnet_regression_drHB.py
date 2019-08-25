@@ -274,7 +274,7 @@ for cv_index in range(1):
     # aw = AdamW(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
     model.compile(loss='mse', optimizer = Adam(lr = 1e-4),
                 metrics= ['accuracy'])
-    model.summary()
+    # model.summary()
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_4.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
@@ -284,7 +284,7 @@ for cv_index in range(1):
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
    
-    model.load_weights(save_model_name)
+    # model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 10
