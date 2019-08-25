@@ -179,17 +179,17 @@ ord_val_y = np.zeros((4, val_y.shape[0]))
 # binarized labeling
 for count, row in enumerate(train_y):
     idx = row
-    for i in range(idx+1):
+    for i in range(idx):
         ord_train_y[count, i] = 0.95 
 #label smoothening
-    for j in range(idx+1, 5):
+    for j in range(idx, 4):
         ord_train_y[count, j] = 0.05 #label smoothening
 # binarized labeling
 for count, row in enumerate(val_y):
     idx = row
-    for i in range(idx+1):
+    for i in range(idx):
         ord_val_y[count, i] = 1.0 
-    for j in range(idx+1, 5):
+    for j in range(idx, 4):
         ord_val_y[count, j] = 0.0
 
 qwk_ckpt_name = './trash.h5'
