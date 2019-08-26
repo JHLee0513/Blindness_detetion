@@ -19,6 +19,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
 from efficientnet import EfficientNetB4, EfficientNetB3
+from keras.utils.training_utils import multi_gpu_model
 import scipy
 from imgaug import augmenters as iaa
 import imgaug as ia
@@ -30,7 +31,7 @@ gc.collect()
 img_target = 380
 SIZE = 380
 IMG_SIZE = 380
-batch = 12
+batch = 24
 IMAGE_SIZE = 380
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
@@ -293,6 +294,7 @@ def build_model(freeze = False):
     x = GlobalAveragePooling2D()(x)
     out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
     model = Model(inputs, out_layer)
+    model = multi_gpu_model(model, gpus=2) # multi-GPU training?
     return model
 
 x = train_df['id_code']
