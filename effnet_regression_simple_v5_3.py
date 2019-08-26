@@ -177,6 +177,7 @@ class QWKEvaluation(Callback):
                 #log.write(str(log_fold) + ": " + str(score) + "\n")
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+sometimes3 = lambda aug: iaa.Sometimes(0.3, aug)
 
 val_seq = iaa.Sequential([
     sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True))
@@ -188,7 +189,7 @@ seq = iaa.Sequential(
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
         sometimes(iaa.Affine(
-            scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
+            # scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             # translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
             rotate=(-80, 80), # rotate by -360 to +360 degrees
             # shear=(-5, 5), # shear by -16 to +16 degrees
@@ -196,8 +197,8 @@ seq = iaa.Sequential(
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         )),
-        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
-        sometimes(iaa.contrast.LinearContrast(alpha = (0.85, 1.15)))
+        sometimes3(iaa.size.Crop(percent = (0.05, 0.1), keep_size = True)),
+        sometimes3(iaa.contrast.LinearContrast(alpha = (0.85, 1.15)))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
         # ,iaa.SomeOf((0, 5),
@@ -284,5 +285,5 @@ model.fit_generator(
     validation_data = val_generator,
     validation_steps = len(val_y)/batch,
     workers=1, use_multiprocessing=False)
-
+model.load_weights(save_model_name)
 model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v22.h5")
