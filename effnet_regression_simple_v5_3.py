@@ -29,7 +29,7 @@ gc.collect()
 img_target = 380
 SIZE = 380
 IMG_SIZE = 380
-batch = 8
+batch = 10
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
 
@@ -67,7 +67,7 @@ def crop_image_from_gray(img,tol=7):
 def load_ben_color(image, sigmaX=10):
     # image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # image = crop_image_from_gray(image)
+    image = crop_image_from_gray(image)
     image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
     image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
         
@@ -188,7 +188,7 @@ seq = iaa.Sequential(
         iaa.Fliplr(0.5), # horizontally flip 50% of all images
         iaa.Flipud(0.5), # vertically flip 20% of all images
         sometimes(iaa.Affine(
-            #scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
+            scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
             # translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
             rotate=(-80, 80), # rotate by -360 to +360 degrees
             # shear=(-5, 5), # shear by -16 to +16 degrees
@@ -197,6 +197,7 @@ seq = iaa.Sequential(
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         )),
         sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True))
+        sometimes(iaa.contrast.LinearContrast(alpha = (0.85, 1.15)))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
         # ,iaa.SomeOf((0, 5),
@@ -259,12 +260,12 @@ train_x = train['id_code']
 train_y = train['diagnosis'].astype(int)
 val_x = val['id_code']
 val_y = val['diagnosis'].astype(int)
-train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
+train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
 val_generator = My_Generator(val_x, val_y, batch, is_train=False)
 qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                     batch_size=batch, interval=1)
 model = build_model(freeze = False)
-model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_2.hdf5")
+model.load_weights("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_4.hdf5")
 save_model_name = '/nas-homes/joonl4/blind_weights/snapp.hdf5'
 
 model.compile(loss='mse', optimizer = Adam(lr=1e-3),
@@ -273,57 +274,15 @@ cycle = len(train_y)/batch * 5
 cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
 model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                             mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
+
 model.fit_generator(
     train_generator,
     steps_per_epoch=len(train_y)/batch,
-    epochs=5,
+    epochs=10,
     verbose = 1,
     callbacks = [qwk, cyclic, model_checkpoint],
     validation_data = val_generator,
     validation_steps = len(val_y)/batch,
     workers=1, use_multiprocessing=False)
 
-img_target = 512
-SIZE = 512
-IMG_SIZE = 512
-batch = 4
-
-train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
-val_generator = My_Generator(val_x, val_y, batch, is_train=False)
-qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-                    batch_size=batch, interval=1)
-
-model = build_model(freeze = True)
-model.load_weights(save_model_name)
-model.compile(loss='mse', optimizer = SGD(lr=1e-4),
-            metrics= ['accuracy'])
-
-model.fit_generator(
-    train_generator,
-    steps_per_epoch=len(train_y)/batch,
-    epochs=3,
-    verbose = 1,
-    callbacks = [qwk, cyclic, model_checkpoint],
-    validation_data = val_generator,
-    validation_steps = len(val_y)/batch,
-    workers=1, use_multiprocessing=False)
-
-model = build_model(freeze = False)
-model.load_weights(save_model_name)
-model.compile(loss='mse', optimizer = SGD(lr=1e-3),
-            metrics= ['accuracy'])
-
-cycle = len(train_y)/batch * 5
-cyclic = CyclicLR(mode='exp_range', base_lr = 1e-5, max_lr = 1e-4, step_size = cycle)
-
-model.fit_generator(
-    train_generator,
-    steps_per_epoch=len(train_y)/batch,
-    epochs=30,
-    verbose = 1,
-    callbacks = [qwk, cyclic, model_checkpoint],
-    validation_data = val_generator,
-    validation_steps = len(val_y)/batch,
-    workers=1, use_multiprocessing=False)
-
-model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v16.h5")
+model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v22.h5")
