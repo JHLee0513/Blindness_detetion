@@ -34,17 +34,8 @@ batch = 12
 IMAGE_SIZE = 380
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
-# train_df = train_df.astype(str)
-# df_2019 = train_df[train_df['id_code'].str.contains(".png")]
 
-# train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 420, stratify = df_2019['diagnosis'])
-# train_2019 = train_2019.reset_index(drop = True)
-# val = val_2019.reset_index(drop = True)
-
-# train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
-# train = train_df.reset_index(drop = True)
-
-train, val = train_test_split(train_df, test_size = 0.2, random_state = 69420, stratify = train_df['diagnosis'])
+# train, val = train_test_split(train_df, test_size = 0.2, random_state = 69420, stratify = train_df['diagnosis'])
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
@@ -219,24 +210,16 @@ class QWKEvaluation(Callback):
                                                   workers=1, use_multiprocessing=True,
                                                   verbose=1)
             def flatten(pred):
-                #print(np.argmax(y,axis = 1).astype(int))
-                #return np.argmax(y, axis=1).astype(int)
-
                 return np.clip(np.rint(pred), 0, 4).astype(int)
-                #return np.rint(np.sum(y,axis=1)).astype(int)
             
             score = cohen_kappa_score(flatten(self.y_val),
                                       flatten(y_pred),
                                       labels=[0,1,2,3,4],
                                       weights='quadratic')
-#             print(flatten(self.y_val)[:5])
-#             print(flatten(y_pred)[:5])
             print("\n epoch: %d - QWK_score: %.6f \n" % (epoch+1, score))
             self.history.append(score)
             if score >= max(self.history):
                 print('save checkpoint: ', score)
-                # self.model.save(qwk_ckpt_name)
-                #log.write(str(log_fold) + ": " + str(score) + "\n")
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
 
@@ -312,20 +295,35 @@ def build_model(freeze = False):
     model = Model(inputs, out_layer)
     return model
 
-# for cv_index in range(1,6):
-for cv_index in range(1):
+x = train_df['id_code']
+y = train_df['diagnosis'].astype(int)
+
+kf = StratifiedKFold(n_splits = 5, shuffle = True, random_state=69420)
+train_all = []
+evaluate_all = []
+for train_idx, test_idx in kf.split(x, y):
+    train_all.append(train_idx)
+    evaluate_all.append(test_idx)
+
+def get_cv_data(cv_index):
+    train_index = train_all[cv_index-1]
+    evaluate_index = evaluate_all[cv_index-1]
+    x_train = np.array(train_df.id_code[train_index])
+    y_train = np.array(y[train_index])
+    x_valid = np.array(train_df.id_code[evaluate_index])
+    y_valid = np.array(y[evaluate_index])
+    return x_train,y_train,x_valid,y_valid
+
+
+for cv_index in range(1,6):
+# for cv_index in range(1):
     fold = cv_index
-    train_x = train['id_code']
-    train_y = train['diagnosis'].astype(int)
-    val_x = val['id_code']
-    val_y = val['diagnosis'].astype(int)
-    # train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
-    # val_generator = My_Generator(val_x, val_y, batch, is_train=False)
-    # qwk = QWKEvaluation(validation_data=(val_generator, val_y),
-    #                     batch_size=batch, interval=1)
+    # train_x = train['id_code']
+    # train_y = train['diagnosis'].astype(int)
+    # val_x = val['id_code']
+    # val_y = val['diagnosis'].astype(int)
+    train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     model = build_model(freeze = False)
-    # aw = AdamW(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
-    # aw = AdamW(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=53)
     model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_3.hdf5')
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_5.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
@@ -334,8 +332,6 @@ for cv_index in range(1):
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
-    # model = build_model(freeze = False)
-    # model.load_weights(save_model_name)
     model.compile(loss='mse', optimizer = Adamax(1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 10
@@ -350,17 +346,4 @@ for cv_index in range(1):
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     model.load_weights(save_model_name)
-    # model.compile(loss='mse', optimizer = SGD(lr=1e-3),
-    #             metrics= ['accuracy'])
-    # cycle = len(train_y)/batch * 4
-    # cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
-    # model.fit_generator(
-    #     train_generator,
-    #     steps_per_epoch=len(train_y)/batch,
-    #     epochs=12,
-    #     verbose = 1,
-    #     callbacks = [model_checkpoint, qwk, cyclic],
-    #     validation_data = val_generator,
-    #     validation_steps = len(val_y)/batch,
-    #     workers=1, use_multiprocessing=False)
-    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_5.h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_5_"+str(cv_index)+".h5")
