@@ -325,9 +325,10 @@ for cv_index in range(1,6):
     # val_x = val['id_code']
     # val_y = val['diagnosis'].astype(int)
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
-    model = build_model(freeze = False)
+    with tf.device('/cpu:0'):
+        model = build_model(freeze = False)
     model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_3.hdf5')
-    model = multi_gpu_model(model, gpus=2) # multi-GPU training?
+    parallel_model = multi_gpu_model(model, gpus=2, cpu_relocation=True) # multi-GPU training?
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_5_'+str(cv_index)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
@@ -335,11 +336,11 @@ for cv_index in range(1,6):
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
-    model.compile(loss='mse', optimizer = Adamax(1e-3),
+    parallel_model.compile(loss='mse', optimizer = Adamax(1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 10
     cyclic = CyclicLR(mode='exp_range', base_lr = .5e-4, max_lr = 1e-3, step_size = cycle)  
-    model.fit_generator(
+    parallel_model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
         epochs=30,
