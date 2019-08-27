@@ -328,7 +328,7 @@ for cv_index in range(1,6):
     model = build_model(freeze = False)
     model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_3.hdf5')
     model = multi_gpu_model(model, gpus=2) # multi-GPU training?
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_5.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_5_'+str(cv_index)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
