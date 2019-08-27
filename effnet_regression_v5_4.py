@@ -295,7 +295,6 @@ def build_model(freeze = False):
     out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
     with tf.device("/cpu:0"):
         model = Model(inputs, out_layer)
-    model = multi_gpu_model(model, gpus=2) # multi-GPU training?
     return model
 
 x = train_df['id_code']
@@ -328,6 +327,7 @@ for cv_index in range(1,6):
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     model = build_model(freeze = False)
     model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_3.hdf5')
+    model = multi_gpu_model(model, gpus=2) # multi-GPU training?
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v20_5.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
