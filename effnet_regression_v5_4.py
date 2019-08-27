@@ -350,4 +350,4 @@ for cv_index in range(1,6):
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     parallel_model.load_weights(save_model_name)
-    parallel_model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_5_"+str(cv_index)+".h5")
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_5_"+str(cv_index)+".h5")
