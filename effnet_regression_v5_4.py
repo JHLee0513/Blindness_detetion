@@ -293,7 +293,8 @@ def build_model(freeze = False):
     x = model.output
     x = GlobalAveragePooling2D()(x)
     out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
-    model = Model(inputs, out_layer)
+    with tf.device("/cpu:0"):
+        model = Model(inputs, out_layer)
     model = multi_gpu_model(model, gpus=2) # multi-GPU training?
     return model
 
