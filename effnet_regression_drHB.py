@@ -16,7 +16,7 @@ from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold, StratifiedKFold
-from sklearn.utils import class_weight, shuffle
+from sklearn.utils import class_weight, shuffle, multi_gpu_model
 from keras.losses import binary_crossentropy, categorical_crossentropy
 from efficientnet import EfficientNetB5, EfficientNetB4
 import scipy
@@ -362,7 +362,7 @@ def build_model(freeze = False):
 # for cv_index in range(1,6):
 for cv_index in range(1):
     fold = cv_index
-    train_x = train['id_code']
+    train_x = train['image']
     train_y = train['diagnosis'].astype(int)
     val_x = val['id_code']
     val_y = val['diagnosis'].astype(int)
