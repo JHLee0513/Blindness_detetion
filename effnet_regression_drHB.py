@@ -183,7 +183,7 @@ class AltModelCheckpoint(Callback):
     def __init__(self, filepath, base_model, monitor='val_loss', verbose=0,
                  save_best_only=False, save_weights_only=False,
                  mode='auto', period=1):
-        super(Alt_Model_Checkpoint, self).__init__()
+        super(AltModelCheckpoint, self).__init__()
         self.base_model = base_model
         self.monitor = monitor
         self.verbose = verbose
