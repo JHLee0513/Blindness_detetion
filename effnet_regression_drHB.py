@@ -343,7 +343,7 @@ for cv_index in range(1):
     parallel_model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy'])
     save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v230.hdf5'
-    model_checkpoint = AltModelCheckpoint(save_model_name,monitor= 'val_loss',
+    model_checkpoint = AltModelCheckpoint(save_model_name,model,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
     train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
