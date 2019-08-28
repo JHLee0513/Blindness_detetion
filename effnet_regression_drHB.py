@@ -10,13 +10,13 @@ from keras.utils.vis_utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import *
 from keras import backend as K
-from keras.utils import Sequence, to_categorical
+from keras.utils import Sequence, to_categorical,multi_gpu_model
 from keras.callbacks import Callback
 from tqdm import tqdm
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold, StratifiedKFold
-from sklearn.utils import class_weight, shuffle, multi_gpu_model
+from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
 from efficientnet import EfficientNetB5, EfficientNetB4
 import scipy
