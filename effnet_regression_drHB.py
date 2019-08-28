@@ -363,7 +363,7 @@ def build_model(freeze = False):
 for cv_index in range(1):
     fold = cv_index
     train_x = train['image']
-    train_y = train['diagnosis'].astype(int)
+    train_y = train['level'].astype(int)
     val_x = val['id_code']
     val_y = val['diagnosis'].astype(int)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
