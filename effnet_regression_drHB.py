@@ -29,16 +29,13 @@ gc.collect()
 img_target = 380
 SIZE = 380
 IMG_SIZE = 380
-batch = 12
-train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced2.csv")
-df_2019 = train_df[train_df['id_code'].str.contains(".png")]
-
-train_2019, val_2019 = train_test_split(df_2019, test_size = 0.2, random_state = 69420, stratify = df_2019['diagnosis'])
-train_2019 = train_2019.reset_index(drop = True)
-val = val_2019.reset_index(drop = True)
-
-train_df = train_df[~train_df.id_code.isin(val_2019.id_code)]
-train = train_df.reset_index(drop = True)
+batch = 40
+train_df = pd.read_csv("/nas-homes/joonl4/blind_2015/trainLabels.csv")
+val_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
+train_df['image'] = train_df['image'].astype(str) + ".jpeg"
+train = train_df
+val_df['id_code'] = val_df['id_code'].astype(str) + ".png"
+val = val_df
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
@@ -181,7 +178,110 @@ class QWKEvaluation(Callback):
                 # self.model.save(qwk_ckpt_name)
                 #log.write(str(log_fold) + ": " + str(score) + "\n")
 
-sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+
+class AltModelCheckpoint(Callback):
+    """Save the model after every epoch.
+
+    `filepath` can contain named formatting options,
+    which will be filled with the values of `epoch` and
+    keys in `logs` (passed in `on_epoch_end`).
+
+    For example: if `filepath` is `weights.{epoch:02d}-{val_loss:.2f}.hdf5`,
+    then the model checkpoints will be saved with the epoch number and
+    the validation loss in the filename.
+
+    # Arguments
+        filepath: string, path to save the model file.
+        monitor: quantity to monitor.
+        verbose: verbosity mode, 0 or 1.
+        save_best_only: if `save_best_only=True`,
+            the latest best model according to
+            the quantity monitored will not be overwritten.
+        mode: one of {auto, min, max}.
+            If `save_best_only=True`, the decision
+            to overwrite the current save file is made
+            based on either the maximization or the
+            minimization of the monitored quantity. For `val_acc`,
+            this should be `max`, for `val_loss` this should
+            be `min`, etc. In `auto` mode, the direction is
+            automatically inferred from the name of the monitored quantity.
+        save_weights_only: if True, then only the model's weights will be
+            saved (`model.save_weights(filepath)`), else the full model
+            is saved (`model.save(filepath)`).
+        period: Interval (number of epochs) between checkpoints.
+    """
+
+    def __init__(self, filepath, monitor='val_loss', verbose=0,
+                save_best_only=False, save_weights_only=False,
+                mode='auto', period=1,
+                multiple_gpu=False, name_of_model=None):
+        super(ModelCheckpoint, self).__init__()
+        self.monitor = monitor
+        self.verbose = verbose
+        self.filepath = filepath
+        self.save_best_only = save_best_only
+        self.save_weights_only = save_weights_only
+        self.period = period
+        self.epochs_since_last_save = 0
+        self.multi_gpu_mode = multiple_gpu
+        self.name_of_model = name_of_model
+
+        if mode not in ['auto', 'min', 'max']:
+            warnings.warn('ModelCheckpoint mode %s is unknown, '
+                        'fallback to auto mode.' % (mode),
+                        RuntimeWarning)
+            mode = 'auto'
+
+        if mode == 'min':
+            self.monitor_op = np.less
+            self.best = np.Inf
+        elif mode == 'max':
+            self.monitor_op = np.greater
+            self.best = -np.Inf
+        else:
+            if 'acc' in self.monitor or self.monitor.startswith('fmeasure'):
+                self.monitor_op = np.greater
+                self.best = -np.Inf
+            else:
+                self.monitor_op = np.less
+                self.best = np.Inf
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        self.epochs_since_last_save += 1
+        if self.epochs_since_last_save >= self.period:
+            self.epochs_since_last_save = 0
+            filepath = self.filepath.format(epoch=epoch + 1, **logs)
+            if self.save_best_only:
+                current = logs.get(self.monitor)
+                if current is None:
+                    warnings.warn('Can save best model only with %s available, '
+                                'skipping.' % (self.monitor), RuntimeWarning)
+                else:
+                    if self.monitor_op(current, self.best):
+                        if self.verbose > 0:
+                            print('\nEpoch %05d: %s improved from %0.5f to %0.5f,'
+                                ' saving model to %s'
+                                % (epoch + 1, self.monitor, self.best,
+                                    current, filepath))
+                        self.best = current
+                        if self.save_weights_only:
+                            self.model.save_weights(filepath, overwrite=True, multiple_gpu=self.multi_gpu_mode, name_of_model=self.name_of_model)
+                        else:
+                            self.model.save(filepath, overwrite=True)
+                    else:
+                        if self.verbose > 0:
+                            print('\nEpoch %05d: %s did not improve from %0.5f' %
+                                (epoch + 1, self.monitor, self.best))
+            else:
+                if self.verbose > 0:
+                    print('\nEpoch %05d: saving model to %s' % (epoch + 1, filepath))
+                if self.save_weights_only:
+                    self.model.save_weights(filepath, overwrite=True)
+                else:
+                    self.model.save(filepath, overwrite=True)
+
+sometimes = lambda aug: iaa.Sometimes(0.3, aug)
 
 val_seq = iaa.Sequential([
     sometimes(iaa.size.Crop(percent = (0.1, 0.2), keep_size = True))
@@ -190,8 +290,8 @@ val_seq = iaa.Sequential([
 seq = iaa.Sequential(
     [
         # apply the following augmenters to most images
-        iaa.Fliplr(0.5), # horizontally flip 50% of all images
-        iaa.Flipud(0.5), # vertically flip 20% of all images
+        iaa.Fliplr(0.3), # horizontally flip 50% of all images
+        iaa.Flipud(0.2), # vertically flip 20% of all images
         sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
         sometimes(iaa.Affine(
             scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
@@ -270,30 +370,25 @@ for cv_index in range(1):
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
-    model = build_model(freeze = False)
-    # aw = AdamW(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0., weight_decay=0.025, batch_size=batch, samples_per_epoch=len(train_y)/batch, epochs=3)
-    model.compile(loss='mse', optimizer = Adam(lr = 1e-4),
+    with tf.device('/cpu:0'):
+        model = build_model(freeze = False)
+    parallel_model = multi_gpu_model(model, gpus=4)
+    parallel_model.compile(loss='mse', optimizer = Adam(lr = 1e-3),
                 metrics= ['accuracy'])
-    # model.summary()
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_4.hdf5'
-    model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v230.hdf5'
+    model_checkpoint = AltModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
     train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
-   
-    model.load_weights(save_model_name)
-    model.compile(loss='mse', optimizer = Adam(lr=1e-3),
-                metrics= ['accuracy'])
     cycle = len(train_y)/batch * 10
-    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)  
-    model.fit_generator(
+    cyclic = CyclicLR(mode='exp_range', base_lr = .5e-4, max_lr = 1e-3, step_size = cycle)  
+    parallel_model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
         epochs=20,
-        initial_epoch = 15,
         verbose = 1,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
