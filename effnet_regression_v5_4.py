@@ -31,7 +31,7 @@ gc.collect()
 img_target = 380
 SIZE = 380
 IMG_SIZE = 380
-batch = 40
+batch = 48
 IMAGE_SIZE = 380
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
@@ -238,7 +238,7 @@ seq = iaa.Sequential(
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         )),
-        sometimes(iaa.size.Crop(percent = (0.05, 0.4), keep_size = True))
+        # sometimes(iaa.size.Crop(percent = (0.05, 0.4), keep_size = True))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
         # iaa.SomeOf((0, 5),
@@ -329,10 +329,10 @@ for cv_index in range(1,6):
         model = build_model(freeze = False)
     model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110_3.hdf5')
     parallel_model = multi_gpu_model(model, gpus=4) # multi-GPU training?
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_5_'+str(cv_index)+'.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_6_'+str(cv_index)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
-    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
     qwk = QWKEvaluation(validation_data=(val_generator, val_y),
                         batch_size=batch, interval=1)
@@ -350,4 +350,4 @@ for cv_index in range(1,6):
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
     parallel_model.load_weights(save_model_name)
-    parallel_model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_5_"+str(cv_index)+".h5")
+    parallel_model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_6_"+str(cv_index)+".h5")
