@@ -28,11 +28,11 @@ import math
 gc.enable()
 gc.collect()
 
-img_target = 256
-SIZE = 256
-IMG_SIZE = 256
+img_target = 228
+SIZE = 228
+IMG_SIZE = 228
 batch = 20
-IMAGE_SIZE = 256
+IMAGE_SIZE = 228
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
 
@@ -338,12 +338,12 @@ for cv_index in range(1):
                         batch_size=batch, interval=1)
     parallel_model.compile(loss='mse', optimizer = Adamax(1e-3),
                 metrics= ['accuracy'])
-    cycle = len(train_y)/batch * 10
+    cycle = len(train_y)/batch * 12
     cyclic = CyclicLR(mode='exp_range', base_lr = .5e-4, max_lr = 1e-3, step_size = cycle)  
     parallel_model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=10,
+        epochs=24,
         verbose = 1,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
