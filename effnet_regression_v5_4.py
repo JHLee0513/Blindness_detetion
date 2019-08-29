@@ -238,7 +238,8 @@ seq = iaa.Sequential(
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         )),
-        # sometimes(iaa.size.Crop(percent = (0.05, 0.4), keep_size = True))
+        sometimes(iaa.contrast.LinearContrast(alpha = (0.85, 1.15))),
+        sometimes(iaa.size.Crop(percent = (0.05, 0.4), keep_size = True))
         # execute 0 to 5 of the following (less important) augmenters per image
         # don't execute all of them, as that would often be way too strong
         # iaa.SomeOf((0, 5),
