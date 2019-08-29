@@ -28,11 +28,11 @@ import math
 gc.enable()
 gc.collect()
 
-img_target = 380
-SIZE = 380
-IMG_SIZE = 380
-batch = 40
-IMAGE_SIZE = 380
+img_target = 256
+SIZE = 256
+IMG_SIZE = 256
+batch = 20
+IMAGE_SIZE = 256
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
 
@@ -70,7 +70,7 @@ def crop_image_from_gray(img,tol=7):
 def load_ben_color(image, sigmaX=10):
     # image = cv2.imread(path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # image = crop_image_from_gray(image)
+    image = crop_image_from_gray(image)
     image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
     image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
         
@@ -169,8 +169,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            # img = load_ben_color(img)
-            img = new_preprocess(img)
+            img = load_ben_color(img)
+            # img = new_preprocess(img)
             # img = cv2.resize(img, (SIZE, SIZE))
             if(self.is_augment):
                 img = seq.augment_image(img)
@@ -185,8 +185,8 @@ class My_Generator(Sequence):
         batch_images = []
         for (sample, label) in zip(batch_x, batch_y):
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
-            # img = load_ben_color(img)
-            img = new_preprocess(img)
+            img = load_ben_color(img)
+            # img = new_preprocess(img)
             # img = cv2.resize(img, (SIZE, SIZE))
             # img = val_seq.augment_image(img)
             batch_images.append(img)
@@ -317,7 +317,7 @@ def get_cv_data(cv_index):
     return x_train,y_train,x_valid,y_valid
 
 
-for cv_index in range(1,6):
+for cv_index in range(1):
 # for cv_index in range(1):
     fold = cv_index
     # train_x = train['id_code']
@@ -327,9 +327,9 @@ for cv_index in range(1,6):
     train_x, train_y, val_x, val_y = get_cv_data(cv_index)
     with tf.device('/cpu:0'):
         model = build_model(freeze = False)
-        model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5')
-    parallel_model = multi_gpu_model(model, gpus=4) # multi-GPU training?
-    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_6_'+str(cv_index)+'.hdf5'
+        model.load_weights('/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v230.hdf5')
+    parallel_model = multi_gpu_model(model, gpus=2) # multi-GPU training?
+    save_model_name = '/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v23_'+str(cv_index)+'.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=True)
@@ -352,7 +352,7 @@ for cv_index in range(1,6):
 
     old_model = parallel_model.layers[-2]   #get single GPU model weights
     # it's necessary to save the model before use this single GPU model
-    old_model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_6_"+str(cv_index)+".h5") 
+    old_model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v23_"+str(cv_index)+".h5") 
     
     # parallel_model.load_weights(save_model_name)
     # model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v20_5_"+str(cv_index)+".h5")
