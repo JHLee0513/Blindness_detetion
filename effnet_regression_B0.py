@@ -350,7 +350,7 @@ for cv_index in range(1,6):
         validation_data = val_generator,
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
-
+    model.load_weights(save_model_name)
     # old_model = model.layers[-2]   #get single GPU model weights
     # it's necessary to save the model before use this single GPU model
     model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_5fold_v24_"+str(cv_index)+".h5") 
