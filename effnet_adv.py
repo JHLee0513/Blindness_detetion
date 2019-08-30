@@ -244,8 +244,8 @@ for cv_index in range(1):
         workers=1, use_multiprocessing=False)
 
     parallel_model.load_weights(save_model_name)
-    test_generator = Test_Generator(train_df['id_code'], None, batch, is_train=False)
-    predictions = model.predict_generator(generator=test_generator,steps =np.ceil(train.shape[0]))
+    test_generator = Test_Generator(train_df['id_code'], None, 1, is_train=False)
+    predictions = model.predict_generator(generator=test_generator,steps =np.ceil(train.shape[0] ))
     train_df['is_test'] = predictions
     train_df = train_df.sort_values(by=['is_test'])
     train_df.to_csv("/nas-homes/joonl4/blind/adv_list.csv", index=False)
