@@ -215,6 +215,8 @@ def build_model(freeze = False):
     model = Model(inputs, out_layer)
     return model
 
+print(train_df.shape[0])
+
 for cv_index in range(1):
     fold = cv_index
     train_x = train['id_code']
