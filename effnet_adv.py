@@ -233,19 +233,19 @@ for cv_index in range(1):
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 10
     cyclic = CyclicLR(mode='exp_range', base_lr = .5e-4, max_lr = 1e-3, step_size = cycle)  
-    parallel_model.fit_generator(
-        train_generator,
-        steps_per_epoch=len(train_y)/batch,
-        epochs=20,
-        verbose = 1,
-        callbacks = [model_checkpoint, cyclic],
-        validation_data = val_generator,
-        validation_steps = len(val_y)/batch,
-        workers=1, use_multiprocessing=False)
+    # parallel_model.fit_generator(
+    #     train_generator,
+    #     steps_per_epoch=len(train_y)/batch,
+    #     epochs=20,
+    #     verbose = 1,
+    #     callbacks = [model_checkpoint, cyclic],
+    #     validation_data = val_generator,
+    #     validation_steps = len(val_y)/batch,
+    #     workers=1, use_multiprocessing=False)
 
     parallel_model.load_weights(save_model_name)
-    test_generator = Test_Generator(train_df['id_code'], None, batch, is_train=False)
-    predictions = model.predict_generator(generator=test_generator,steps =np.ceil(train.shape[0]))
+    test_generator = Test_Generator(train_df['id_code'], None, 1, is_train=False)
+    predictions = model.predict_generator(generator=test_generator,steps =np.ceil(train.shape[0]), verbose = 1)
     train_df['is_test'] = predictions
     train_df = train_df.sort_values(by=['is_test'])
     train_df.to_csv("/nas-homes/joonl4/blind/adv_list.csv", index=False)
