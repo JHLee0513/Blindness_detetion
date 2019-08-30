@@ -198,7 +198,7 @@ class Test_Generator(Sequence):
 
     def valid_generate(self, batch_x):
         batch_images = []
-        for (sample, label) in zip(batch_x, batch_y):
+        for sample inbatch_x:
             img = cv2.imread('/nas-homes/joonl4/blind/train_images/'+sample)
             img = load_ben_color(img)
             batch_images.append(img)
