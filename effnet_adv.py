@@ -31,7 +31,7 @@ gc.collect()
 img_target = 228
 SIZE = 228
 IMG_SIZE = 228
-batch = 16
+batch = 48
 IMAGE_SIZE = 228
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 train_df['diagnosis'] = 0
@@ -222,17 +222,19 @@ for cv_index in range(1):
     train_y = train['diagnosis'].astype(str)
     val_x = val['id_code']
     val_y = val['diagnosis'].astype(str)
-    model = build_model(freeze = False)
+    with tf.device('/cpu:0'):
+        model = build_model(freeze = False)
+    parallel_model = multi_gpu_model(model, gpus=3)
     save_model_name = '/nas-homes/joonl4/blind_weights/eff_adversarial.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
     train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
     val_generator = My_Generator(val_x, val_y, batch, is_train=False)
-    model.compile(loss='binary_crossentropy', optimizer = Adamax(1e-3),
+    parallel_model.compile(loss='binary_crossentropy', optimizer = Adamax(1e-3),
                 metrics= ['accuracy'])
     cycle = len(train_y)/batch * 10
     cyclic = CyclicLR(mode='exp_range', base_lr = .5e-4, max_lr = 1e-3, step_size = cycle)  
-    model.fit_generator(
+    parallel_model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
         epochs=20,
@@ -242,7 +244,7 @@ for cv_index in range(1):
         validation_steps = len(val_y)/batch,
         workers=1, use_multiprocessing=False)
 
-    model.load_weights(save_model_name)
+    parallel_model.load_weights(save_model_name)
     test_generator = Test_Generator(train_df['id_code'], None, batch, is_train=False)
     predictions = model.predict_generator(generator=test_generator,steps =np.ceil(train.shape[0]))
     train_df['is_test'] = predictions
