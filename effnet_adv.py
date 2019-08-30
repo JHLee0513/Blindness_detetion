@@ -35,6 +35,7 @@ batch = 72
 IMAGE_SIZE = 228
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 train_df['diagnosis'] = 0
+train_df = train_df[1:]
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 test_df['diagnosis'] = 1
 test_df['id_code'] += '.png'
@@ -225,7 +226,7 @@ for cv_index in range(1):
     val_y = val['diagnosis']
     with tf.device('/cpu:0'):
         model = build_model(freeze = False)
-    parallel_model = multi_gpu_model(model, gpus=3)
+    parallel_model = multi_gpu_model(model, gpus=2)
     save_model_name = '/nas-homes/joonl4/blind_weights/eff_adversarial.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
@@ -246,8 +247,8 @@ for cv_index in range(1):
     #     workers=1, use_multiprocessing=False)
 
     parallel_model.load_weights(save_model_name)
-    test_generator = Test_Generator(train_df['id_code'], 1, is_train=False)
-    predictions = model.predict_generator(generator=test_generator,steps =np.ceil(train.shape[0] ))
+    test_generator = Test_Generator(train_df['id_code'], 2, is_train=False)
+    predictions = model.predict_generator(generator=test_generator,steps =np.ceil(train_df.shape[0] / 2 ))
     train_df['is_test'] = predictions
     train_df = train_df.sort_values(by=['is_test'])
     train_df.to_csv("/nas-homes/joonl4/blind/adv_list.csv", index=False)
