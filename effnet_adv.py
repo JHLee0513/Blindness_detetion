@@ -35,7 +35,6 @@ batch = 48
 IMAGE_SIZE = 228
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 train_df['diagnosis'] = 0
-train_df['id_code'] += '.png'
 test_df = pd.read_csv("/nas-homes/joonl4/blind/test.csv")
 test_df['diagnosis'] = 1
 test_df['id_code'] += '.png'
@@ -219,9 +218,9 @@ def build_model(freeze = False):
 for cv_index in range(1):
     fold = cv_index
     train_x = train['id_code']
-    train_y = train['diagnosis'].astype(str)
+    train_y = train['diagnosis']
     val_x = val['id_code']
-    val_y = val['diagnosis'].astype(str)
+    val_y = val['diagnosis']
     with tf.device('/cpu:0'):
         model = build_model(freeze = False)
     parallel_model = multi_gpu_model(model, gpus=3)
