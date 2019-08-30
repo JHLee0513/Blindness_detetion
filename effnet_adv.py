@@ -31,7 +31,7 @@ gc.collect()
 img_target = 228
 SIZE = 228
 IMG_SIZE = 228
-batch = 48
+batch = 72
 IMAGE_SIZE = 228
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 train_df['diagnosis'] = 0
@@ -248,6 +248,5 @@ for cv_index in range(1):
     predictions = model.predict_generator(generator=test_generator,steps =np.ceil(train.shape[0]))
     train_df['is_test'] = predictions
     train_df = train_df.sort_values(by=['is_test'])
-    train_df = train_df[:732]
-    train_df.drop(['is_test'], axis = 1).to_csv("/nas-homes/joonl4/blind/adv_list.csv", index=False)
+    train_df.to_csv("/nas-homes/joonl4/blind/adv_list.csv", index=False)
 
