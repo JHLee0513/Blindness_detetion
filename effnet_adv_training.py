@@ -27,10 +27,10 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 256
-SIZE = 256
-IMG_SIZE = 256
-batch = 28
+img_target = 300
+SIZE = 300
+IMG_SIZE = 300
+batch = 40
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 val_df = pd.read_csv("/nas-homes/joonl4/blind/adv_val.csv")
 
@@ -178,6 +178,7 @@ class QWKEvaluation(Callback):
                 #log.write(str(log_fold) + ": " + str(score) + "\n")
 
 sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+sometimes2 = lambda aug: iaa.Sometimes(0.2, aug)
 
 seq = iaa.Sequential(
     [
@@ -193,8 +194,8 @@ seq = iaa.Sequential(
             cval=(0, 255), # if mode is constant, use a cval between 0 and 255
             mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
         )),
-        sometimes(iaa.contrast.LinearContrast(alpha = (0.85, 1.15))),
-        sometimes(iaa.size.Crop(percent = (0.05, 0.4), keep_size = True))
+        sometimes2(iaa.contrast.LinearContrast(alpha = (0.85, 1.15))),
+        sometimes(iaa.size.Crop(percent = (0.05, 0.3), keep_size = True))
     ],
     random_order=True)
 
@@ -205,7 +206,7 @@ def build_model(freeze = False):
     inputs = model.input
     x = model.output
     x = GlobalAveragePooling2D()(x)
-    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
+    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.3)(x))
     model = Model(inputs, out_layer)
     return model
 
@@ -234,7 +235,7 @@ for cv_index in range(1):
     parallel_model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=30,
+        epochs=40,
         verbose = 1,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
