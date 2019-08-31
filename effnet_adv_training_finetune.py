@@ -35,7 +35,7 @@ batch = 36
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
 train_df['id_code'] += '.png'
 val_2019_list = pd.read_csv("/nas-homes/joonl4/blind/adv_val.csv")
-val_2019_list = val[val['id_code'].str.contains(".png")]
+val_2019_list = val_2019_list[val_2019_list['name'].str.contains(".png")]
 val = train_df[train_df['id_code'].isin(val_2019_list)]
 train = train_df[~train_df['id_code'].isin(val_2019_list)]
 
