@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.utils import class_weight, shuffle
 from keras.losses import binary_crossentropy, categorical_crossentropy
-from efficientnet import EfficientNetB4, EfficientNetB1
+from efficientnet import EfficientNetB4, EfficientNetB3
 from keras.utils import multi_gpu_model
 import scipy
 from imgaug import augmenters as iaa
@@ -27,10 +27,10 @@ import gc
 gc.enable()
 gc.collect()
 
-img_target = 228
-SIZE = 228
-IMG_SIZE = 228
-batch = 36
+img_target = 256
+SIZE = 256
+IMG_SIZE = 256
+batch = 28
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 val_df = pd.read_csv("/nas-homes/joonl4/blind/adv_val.csv")
 
@@ -199,13 +199,13 @@ seq = iaa.Sequential(
     random_order=True)
 
 def build_model(freeze = False):
-    model = EfficientNetB1(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    model = EfficientNetB3(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
     for layers in model.layers:
         layers.trainable= not freeze
     inputs = model.input
     x = model.output
     x = GlobalAveragePooling2D()(x)
-    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.25)(x))
+    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
     model = Model(inputs, out_layer)
     return model
 
@@ -225,7 +225,7 @@ for cv_index in range(1):
     parallel_model = multi_gpu_model(model, gpus=2)
     parallel_model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
-    save_model_name = '/nas-homes/joonl4/blind_weights/effnet_adversarial_B1.hdf5'
+    save_model_name = '/nas-homes/joonl4/blind_weights/effnet_adversarial_B3.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
                                     mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
 
@@ -242,4 +242,4 @@ for cv_index in range(1):
         workers=1, use_multiprocessing=False)
     parallel_model.load_weights(save_model_name)
     single_model = parallel_model.layers[-2]
-    single_model.save("/nas-homes/joonl4/blind_weights/effnet_adversarial_B1.h5")
+    single_model.save("/nas-homes/joonl4/blind_weights/effnet_adversarial_B3.h5")
