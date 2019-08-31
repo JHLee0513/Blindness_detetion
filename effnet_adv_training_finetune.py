@@ -39,8 +39,8 @@ val_2019_list = val_2019_list[val_2019_list['name'].str.contains(".png")]
 print(val_2019_list.head())
 
 
-val = train_df[train_df['id_code'].isin(val_2019_list)]
-train = train_df[~train_df['id_code'].isin(val_2019_list)]
+val = train_df[train_df['id_code'].isin(val_2019_list['name'])]
+train = train_df[~train_df['id_code'].isin(val_2019_list['name'])]
 
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
