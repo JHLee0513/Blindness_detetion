@@ -223,7 +223,7 @@ for cv_index in range(1):
                         batch_size=batch, interval=1)
     with tf.device('/cpu:0'):
         model = build_model(freeze = False)
-    parallel_model = multi_gpu_model(model, gpus=2)
+    parallel_model = multi_gpu_model(model, gpus=4)
     parallel_model.compile(loss='mse', optimizer = Adam(lr=1e-3),
                 metrics= ['accuracy'])
     save_model_name = '/nas-homes/joonl4/blind_weights/effnet_adversarial_B3.hdf5'
