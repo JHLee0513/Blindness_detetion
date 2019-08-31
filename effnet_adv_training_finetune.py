@@ -31,13 +31,13 @@ img_target = 228
 SIZE = 228
 IMG_SIZE = 228
 batch = 36
-train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
-val_df = pd.read_csv("/nas-homes/joonl4/blind/adv_val.csv")
-val = train_df[train_df['id_code'].isin(val_df['name'])]
-val_2019 = val[val['id_code'].str.contains(".png")]
 
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
-train = train_df[~train_df['id_code'].isin(val_2019['id_code'])]
+train_df['id_code'] += '.png'
+val_2019_list = pd.read_csv("/nas-homes/joonl4/blind/adv_val.csv")
+val_2019_list = val[val['id_code'].str.contains(".png")]
+val = train_df[train_df['id_code'].isin(val_2019_list)]
+train = train_df[~train_df['id_code'].isin(val_2019_list)]
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
