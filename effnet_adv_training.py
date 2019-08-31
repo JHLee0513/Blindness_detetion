@@ -34,8 +34,8 @@ batch = 36
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced.csv")
 val_df = pd.read_csv("/nas-homes/joonl4/blind/adv_val.csv")
 
-train = train_df[train_df['id_code'] not in val_df['name']]
-val = train_df[train_df['id_code'] in val_df['name']]
+train = train_df[~train_df['id_code'].isin(val_df['name'])]
+val = train_df[train_df['id_code'].isin(val_df['name'])]
 
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
