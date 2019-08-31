@@ -42,7 +42,8 @@ print(val_2019_list.head())
 val = train_df[train_df['id_code'].isin(val_2019_list['name'])]
 train = train_df[~train_df['id_code'].isin(val_2019_list['name'])]
 
-
+print(val.head())
+print(train.head())
 #https://www.kaggle.com/ratthachat/aptos-updatedv14-preprocessing-ben-s-cropping#3.-Further-improve-by-auto-cropping
 
 def crop_image1(img,tol=7):
