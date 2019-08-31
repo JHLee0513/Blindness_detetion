@@ -238,10 +238,26 @@ for cv_index in range(1):
 
     cycle = len(train_y)/batch * 10
     cyclic = CyclicLR(mode='exp_range', base_lr = .5e-4, max_lr = 1e-3, step_size = cycle)  
+    # parallel_model.fit_generator(
+    #     train_generator,
+    #     steps_per_epoch=len(train_y)/batch,
+    #     epochs=10,
+    #     verbose = 1,
+    #     callbacks = [model_checkpoint, qwk, cyclic],
+    #     validation_data = val_generator,
+    #     validation_steps = len(val_y)/batch,
+    #     workers=1, use_multiprocessing=False)
+    parallel_model.load_weights(save_model_name)
+    # single_model = parallel_model.layers[-2]
+    # single_model.save("/nas-homes/joonl4/blind_weights/effnet_adversarial_B3.h5")
+
+    train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
+    parallel_model.load_weights(save_model_name)
+    
     parallel_model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=30,
+        epochs=10,
         verbose = 1,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
@@ -249,4 +265,4 @@ for cv_index in range(1):
         workers=1, use_multiprocessing=False)
     parallel_model.load_weights(save_model_name)
     single_model = parallel_model.layers[-2]
-    single_model.save("/nas-homes/joonl4/blind_weights/effnet_adversarial_B3.h5")
+    single_model.save("/nas-homes/joonl4/blind_weights/effnet_adversarial_B3_fine.h5")
