@@ -33,11 +33,11 @@ IMG_SIZE = 300
 batch = 40
 
 train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced2.csv")
-train_df['id_code'] += '.png'
+# train_df['id_code'] += '.png'
 # val_2019_list = pd.read_csv("/nas-homes/joonl4/blind/adv_val.csv")
 val_2019_list = pd.read_csv("/nas-homes/joonl4/blind/adv_top280.csv")
 # val_2019_list = val_2019_list[val_2019_list['name'].str.contains(".png")]
-print(val_2019_list.head())
+# print(val_2019_list.head())
 
 val = train_df[train_df['id_code'].isin(val_2019_list['id_code'])] #name
 train = train_df[~train_df['id_code'].isin(val_2019_list['id_code'])] #name
