@@ -32,14 +32,15 @@ SIZE = 300
 IMG_SIZE = 300
 batch = 40
 
-train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
+train_df = pd.read_csv("/nas-homes/joonl4/blind/train_balanced2.csv")
 train_df['id_code'] += '.png'
-val_2019_list = pd.read_csv("/nas-homes/joonl4/blind/adv_val.csv")
-val_2019_list = val_2019_list[val_2019_list['name'].str.contains(".png")]
+# val_2019_list = pd.read_csv("/nas-homes/joonl4/blind/adv_val.csv")
+val_2019_list = pd.read_csv("/nas-homes/joonl4/blind/adv_top280.csv")
+# val_2019_list = val_2019_list[val_2019_list['name'].str.contains(".png")]
 print(val_2019_list.head())
 
-val = train_df[train_df['id_code'].isin(val_2019_list['name'])]
-train = train_df[~train_df['id_code'].isin(val_2019_list['name'])]
+val = train_df[train_df['id_code'].isin(val_2019_list['id_code'])] #name
+train = train_df[~train_df['id_code'].isin(val_2019_list['id_code'])] #name
 
 print(val.head())
 print(train.head())
@@ -230,7 +231,7 @@ for cv_index in range(1):
         model = build_model(freeze = False)
     parallel_model = multi_gpu_model(model, gpus=2)
     parallel_model.load_weights('/nas-homes/joonl4/blind_weights/effnet_adversarial_B3.hdf5')
-    parallel_model.compile(loss='mse', optimizer = Adam(lr=1e-3),
+    parallel_model.compile(loss='mse', optimizer = Adamax(lr=1e-3),
                 metrics= ['accuracy'])
     save_model_name = '/nas-homes/joonl4/blind_weights/effnet_adversarial_B3_tuned.hdf5'
     model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
@@ -257,7 +258,7 @@ for cv_index in range(1):
     parallel_model.fit_generator(
         train_generator,
         steps_per_epoch=len(train_y)/batch,
-        epochs=10,
+        epochs=50,
         verbose = 1,
         callbacks = [model_checkpoint, qwk, cyclic],
         validation_data = val_generator,
