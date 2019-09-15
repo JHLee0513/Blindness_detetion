@@ -1,5 +1,4 @@
-# APTOS 2019 Blindness Detection
-# [81st out of ~3000]
+# APTOS 2019 Blindness Detection [81/2943 ranking]
 
 # Some TLDRs
 
