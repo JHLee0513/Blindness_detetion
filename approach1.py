@@ -1,0 +1,116 @@
+import numpy as np
+import pandas as pd
+import gc
+import cv2
+from utils.clr_callback import *
+from keras import Model
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from keras.optimizers import *
+from keras.utils.vis_utils import plot_model
+from keras.preprocessing.image import ImageDataGenerator
+from keras.layers import *
+from keras import backend as K
+from keras.utils import Sequence, to_categorical
+from keras.callbacks import Callback
+from tqdm import tqdm
+from sklearn.metrics import cohen_kappa_score, accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.utils import class_weight, shuffle
+from keras.losses import binary_crossentropy, categorical_crossentropy
+from efficientnet import EfficientNetB4, EfficientNetB3
+import scipy
+from imgaug import augmenters as iaa
+import imgaug as ia
+from utils.common_utils import *
+import gc
+gc.enable()
+gc.collect()
+
+img_target = 380
+SIZE = 380
+IMG_SIZE = 380
+batch = 8
+train_df = pd.read_csv("/nas-homes/joonl4/blind/train.csv")
+train_df['id_code'] += '.png'
+
+train, val = train_test_split( \
+    train_df, test_size = 0.2, random_state = 69420, stratify = train_df['diagnosis'])
+train_x = train['id_code']
+train_y = train['diagnosis'].astype(int)
+val_x = val['id_code']
+val_y = val['diagnosis'].astype(int)
+save_model_name = '/nas-homes/joonl4/blind_weights/snap.hdf5'
+sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+
+seq = iaa.Sequential(
+    [
+        # apply the following augmenters to most images
+        iaa.Fliplr(0.5), # 50% horizontal flip
+        iaa.Flipud(0.5), # 50% vertical flip
+        sometimes(iaa.size.Crop(percent = (0.05, 0.2), keep_size = True)),
+        sometimes(iaa.Affine(
+            scale={"x": (0.9, 1.1), "y": (0.9, 1.1)}, # scale images to 80-120% of their size, individually per axis
+            translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)}, # translate by -20 to +20 percent (per axis)
+            rotate=(-80, 80), # rotate by -360 to +360 degrees
+            cval=(0, 255), # if mode is constant, use a cval between 0 and 255
+            mode=ia.ALL # use any of scikit-image's warping modes (see 2nd image from the top for examples)
+        ))
+        # Only apply at minimum 0 at maximum 5 of these augmentations at once
+        ,iaa.SomeOf((0, 5),
+            [
+                sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
+                iaa.OneOf([
+                    iaa.GaussianBlur((0, 1.0)), # blur images with a sigma between 0 and 3.0
+                    iaa.AverageBlur(k=(3, 5)), # blur image using local means with kernel sizes between 2 and 7
+                    iaa.MedianBlur(k=(3, 5)), # blur image using local medians with kernel sizes between 2 and 7
+                ]),
+                iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)), # sharpen images
+                iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)), # emboss images
+                iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
+            ],
+            random_order=True
+        )
+    ],
+    random_order=True)
+
+def build_model(freeze = False):
+    model = EfficientNetB4(input_shape = (img_target, img_target, 3), weights = 'imagenet', include_top = False, pooling = None)
+    for layers in model.layers:
+        layers.trainable= not freeze
+    inputs = model.input
+    x = model.output
+    x = GlobalAveragePooling2D()(x)
+    out_layer = Dense(1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
+    model = Model(inputs, out_layer)
+    return model
+
+train_generator = My_Generator(train_x, train_y, batch, is_train=True, augment=False)
+val_generator = My_Generator(val_x, val_y, batch, is_train=False)
+qwk = QWKEvaluation(validation_data=(val_generator, val_y),
+                    batch_size=batch, interval=1)
+model = build_model(freeze = False)
+model.load_weights( \
+    "/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v110.hdf5")
+
+
+for cv_index in range(5):
+    if cv_index != 0:
+        model.load_weights(save_model_name)
+    model.compile(loss='mse', optimizer = Adam(lr=1e-3),
+                metrics= ['accuracy'])
+    cycle = len(train_y)/batch * 4
+    cyclic = CyclicLR(mode='exp_range', base_lr = 1e-4, max_lr = 1e-3, step_size = cycle)
+    model_checkpoint = ModelCheckpoint(save_model_name,monitor= 'val_loss',
+        mode = 'min', save_best_only=True, verbose=1,save_weights_only = True)
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=len(train_y)/batch,
+        epochs=4,
+        verbose = 1,
+        callbacks = [qwk, cyclic, model_checkpoint],
+        validation_data = val_generator,
+        validation_steps = len(val_y)/batch,
+        workers=1, use_multiprocessing=False)
+    model.load_weights(save_model_name)
+    model.save("/nas-homes/joonl4/blind_weights/raw_effnet_pretrained_regression_fold_v11_snap"+str(cv_index+1)+".h5")
