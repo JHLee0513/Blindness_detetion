@@ -5,12 +5,52 @@ from keras import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.preprocessing.image import ImageDataGenerator
 from keras import backend as K
+from keras.layers import *
 from keras.utils import Sequence, to_categorical
 from keras.callbacks import Callback
 from sklearn.metrics import cohen_kappa_score, accuracy_score
 from sklearn.utils import class_weight, shuffle
+from efficientnet import EfficientNetB5, EfficientNetB4, EfficientNetB3
 import scipy
 from imgaug import augmenters as iaa
+
+"""
+@author (Brian) JoonHo Lee
+
+Common functions/classes that appear throughout my codebase are organized here.
+"""
+
+def EffNetB4(freeze = False):
+    model = EfficientNetB4(
+        input_shape = (380, 380, 3),
+        weights = 'imagenet',
+        include_top = False,
+        pooling = None)
+    for layers in model.layers:
+        layers.trainable = not freeze
+    inputs = model.input
+    x = model.output
+    x = GlobalAveragePooling2D()(x)
+    out_layer = Dense(
+        1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
+    model = Model(inputs, out_layer)
+    return model
+
+def EffNetB5(freeze = False):
+    model = EfficientNetB5(
+        input_shape = (456, 456, 3),
+        weights = 'imagenet',
+        include_top = False,
+        pooling = None)
+    for layers in model.layers:
+        layers.trainable= not freeze
+    inputs = model.input
+    x = model.output
+    x = GlobalAveragePooling2D()(x)
+    out_layer = Dense(
+        1, activation = None, name = 'normal_regressor') (Dropout(0.4)(x))
+    model = Model(inputs, out_layer)
+    return model
 
 class My_Generator(Sequence):
     """
@@ -40,7 +80,8 @@ class My_Generator(Sequence):
 
     def on_epoch_end(self):
         if(self.is_train):
-            self.image_filenames, self.labels = shuffle(self.image_filenames, self.labels)
+            self.image_filenames, self.labels = \
+                shuffle(self.image_filenames, self.labels)
         else:
             pass
     
@@ -94,17 +135,20 @@ class QWKEvaluation(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         if epoch % self.interval == 0:
-            y_pred = self.model.predict_generator(generator=self.valid_generator,
-                                                  steps=np.ceil(float(len(self.y_val)) / float(self.batch_size)),
-                                                  workers=1, use_multiprocessing=True,
-                                                  verbose=1)
+            y_pred = self.model.predict_generator(
+                generator=self.valid_generator,
+                steps=np.ceil(float(len(self.y_val)) / float(self.batch_size)),
+                workers=1,
+                use_multiprocessing=True,
+                verbose=1)
             def flatten(pred):
                 return np.rint(pred).astype(int)
             
-            score = cohen_kappa_score(flatten(self.y_val),
-                                      flatten(y_pred),
-                                      labels=[0,1,2,3,4],
-                                      weights='quadratic')
+            score = cohen_kappa_score(
+                flatten(self.y_val),
+                flatten(y_pred),
+                labels=[0,1,2,3,4],
+                weights='quadratic')
             print("\n epoch: %d - QWK_score: %.6f \n" % (epoch+1, score))
             self.history.append(score)
             if score >= max(self.history):
@@ -129,10 +173,10 @@ def crop_image_from_gray(img,tol=7):
     @return cropped image, in the case image is too dark for tolerance such that
     the entire image is cropped, original image is returned
     """
-    if img.ndim ==2:
+    if (img.ndim == 2):
         mask = img>tol
         return img[np.ix_(mask.any(1),mask.any(0))]
-    elif img.ndim==3:
+    elif (img.ndim == 3):
         gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         mask = gray_img>tol
         check_shape = img[:,:,0][np.ix_(mask.any(1),mask.any(0))].shape[0]
@@ -160,6 +204,6 @@ def load_ben_color(image, sigmaX=10):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     # image = crop_image_from_gray(image)
     image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
-    image=cv2.addWeighted ( image,4, cv2.GaussianBlur( image , (0,0) , sigmaX) ,-4 ,128)
-        
+    image=cv2.addWeighted(
+        image,4, cv2.GaussianBlur( image , (0, 0), sigmaX) ,-4 ,128)
     return image
