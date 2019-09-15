@@ -23,7 +23,10 @@ This repo includes my entire approach to Kaggle's APTOS 2019 Blindness Detection
 - [ ] TODO: update repo for gold zone score
 
 ## What is Diabetic Retinopathy (DR)?
-It is a disease caused by damage to the retina. If not treated, it can progress to blindness. Current method of diagnosis is defined by classes 0 to 4, with 0 indicating no presense of disesase with 4 indicating severe progression.
+It is a disease caused by damage to the retina. If not treated, it can progress to blindness. Diagnosed by screening fundus imaging, the comparison is as follows:
+![alt text](https://www.eatonrapidseyecare.com/wp-content/uploads/2017/08/Diabetic-Retinopathy_SS-Graphic-732x293.jpg)
+
+Current method of diagnosis is defined by classes 0 to 4, with 0 indicating no presense of disesase with 4 indicating severe progression.
 
 ## Why does this matter?
 DR causes blindness! What makes this challenge more meaning, also, is that detecting the disease before any further progression can prevent blindness. While millions are affected by DR, lack of access of medical diagnosis makes prevention difficult. A deep learning based detection, when tested to work well, can help diagnosis much more people and prevent those suffering from DR turning blind.
