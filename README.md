@@ -34,14 +34,7 @@ DR causes blindness! What makes this challenge more meaning, also, is that detec
   - Best choice an ensemble of my own approach with a public kernel approach (thanks drHB!)
   - Ranked 81st out of approximately 3000 applicants, but actually ranked 129th during public LB, hence it indicates my model was robust to generalization.
 
-* Challenges:
+## Challenges:
 - Lack of correlation between CV and public LB, and later between private and public LB
 - External data handling
 - Augmentation/ preprocess handling
-
-# Data pipeline:
-## Preprocessing (optional)
-## Modeling
-## Inference (performed in Kaggle kernels)
-
-Test data is preprocess the same way as training data and fed into the model for detection. While the model outputs regression values, they are rounded and clipped to respective classes [0,4].
