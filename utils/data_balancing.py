@@ -5,10 +5,11 @@ from tqdm import tqdm
 """
 @author (Brian) JoonHo Lee
 
-2019 Data has classes 0 to 4, yet there is significant imbalance in data, e.g.
-classes 0 and 2 are high in frequency compared to other classes, with class 4
-especially low in frequency. Here data from 2015 are randomly selected to
-resolve the class imbalance.
+Our data has classes [0,4], yet there is significant class imbalance. To resolve
+this, model is pretrained on 2019 data with classes balanced by data from 2015
+competition. e.g. classes 1,3,4 that are low in frequency received more samples.
+In this script data from 2015 are randomly selected to resolve the class
+imbalance, and save the labels to a new CSV file.
 """
 
 balancing_limit = 2000
@@ -45,7 +46,6 @@ for i in range(5):
     print("filling %d rows" % add)
     balancer = old_df[(old_df.level == i)]
     balancer = balancer.reset_index(drop = True)
-    # print(balancer.head())
     balancer = balancer.loc[:add - 1]
     balancer = balancer.rename(
         columns={"image": "id_code", "level": "diagnosis"})
