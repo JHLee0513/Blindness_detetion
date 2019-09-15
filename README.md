@@ -1,13 +1,26 @@
 # APTOS 2019 Blindness Detection [81/2943 ranking]
 
+This project uses
+```
+keras
+tensorflow-gpu
+efficientnet==0.0.4
+pandas
+numpy
+scipy
+imgaug
+cv2 (openCV)
+tqdm
+sklearn
+```
+
 # About this project
 
 * What is this repository?
-This repo includes my entire approach to Kaggle's APTOS 2019 Blindness Detection challenege. Not only does this include all teh code necessary to reproduce my score, but also the trained model weights!
+This repo includes my entire approach to Kaggle's APTOS 2019 Blindness Detection challenege. Not only does this include all the code necessary to reproduce my score, but also the trained model weights!
 
--[] TODO: cleanup
--[] TODO: model weights
--[] TODO: update repo for gold zone score
+
+- [ ] TODO: update repo for gold zone score
 
 * What is Diabetic Retinopathy (DR)?
 It is a disease caused by damage to the retina. If not treated, it can progress to blindness. Current method of diagnosis is defined by classes 0 to 4, with 0 indicating no presense of disesase with 4 indicating severe progression.
