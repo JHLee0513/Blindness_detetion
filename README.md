@@ -1,6 +1,6 @@
 # APTOS 2019 Blindness Detection [81/2943 ranking]
 
-This project uses
+This project uses the following libraries:
 ```
 keras
 tensorflow-gpu
@@ -36,6 +36,7 @@ DR causes blindness! Fortunately, detecting the disease before any further progr
   - Other experiments such as snapshot ensembling, cyclic LR with Adam, and augmentations followed
   - Best choice an ensemble of my own approach with a public kernel approach (thanks drHB!)
   - Ranked 81st out of approximately 3000 applicants, but actually ranked 129th during public LB, hence it indicates my model was robust to generalization.
+  - Technical details in the Wiki.
 
 ## Challenges:
 - Lack of correlation between CV and public LB, and later between private and public LB
