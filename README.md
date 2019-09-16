@@ -19,9 +19,6 @@ sklearn
 ## What is this repository?
 This repo includes my entire approach to Kaggle's APTOS 2019 Blindness Detection challenege. Not only does this include all the code necessary to reproduce my score, but also the trained model weights!
 
-
-- [ ] TODO: update repo for gold zone score
-
 ## What is Diabetic Retinopathy (DR)?
 It is a disease caused by damage to the retina. If not treated, it can progress to blindness. Diagnosed by screening fundus imaging, the comparison is as follows:
 ![alt text](https://www.eatonrapidseyecare.com/wp-content/uploads/2017/08/Diabetic-Retinopathy_SS-Graphic-732x293.jpg)
