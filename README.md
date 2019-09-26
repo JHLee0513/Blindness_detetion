@@ -1,5 +1,7 @@
 # APTOS 2019 Blindness Detection [81/2943 ranking]
 
+TODO: Cite implemented work
+
 This project uses the following libraries:
 ```
 keras
